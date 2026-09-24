@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO;
 using Ka3005P.App.Infrastructure;
 using Ka3005P.App.Services;
 using Ka3005P.Core.Configuration;
@@ -8,7 +9,8 @@ using Ka3005P.Core.Sessions;
 
 namespace Ka3005P.App.ViewModels;
 
-public sealed class SingleSupplyViewModel : ObservableObject
+public sealed class SingleSupplyViewModel : ObservableObject,IOutputController,
+	IChartSampleSource,IMeasurementExporter
 {
 	private static readonly CultureInfo PolishCulture=
 		CultureInfo.GetCultureInfo("pl-PL");
@@ -16,6 +18,8 @@ public sealed class SingleSupplyViewModel : ObservableObject
 	private readonly PortLeaseRegistry? leases;
 	private readonly ISingleSessionFactory? sessionFactory;
 	private readonly SynchronizationContext? uiContext=SynchronizationContext.Current;
+	private readonly object measurementGate=new();
+	private readonly List<MeasurementSample> measurements=[];
 	private IPowerSupplySession? session;
 	private PortLease? portLease;
 	private string portName="COM5";
@@ -30,6 +34,9 @@ public sealed class SingleSupplyViewModel : ObservableObject
 	private bool isResistanceVisible;
 	private bool hasValidationError;
 	private bool closing;
+
+	public event EventHandler<bool>? OutputStateChanged;
+	public event EventHandler<ChartSample>? ChartSampleReceived;
 
 	public SingleSupplyViewModel(IPowerSupplySession session)
 	{
@@ -130,6 +137,7 @@ public sealed class SingleSupplyViewModel : ObservableObject
 				OnPropertyChanged(nameof(OutputButtonText));
 				OnPropertyChanged(nameof(IsOff));
 				OnPropertyChanged(nameof(IsOn));
+				OutputStateChanged?.Invoke(this,value);
 			}
 		}
 	}
@@ -151,6 +159,50 @@ public sealed class SingleSupplyViewModel : ObservableObject
 	public bool IsOffline => !IsConnected;
 	public bool IsOff => IsConnected && !IsOutputOn;
 	public bool IsOn => IsConnected && IsOutputOn;
+
+	public ChartViewModel CreateChartViewModel(IFileDialogService fileDialog)
+	{
+		ArgumentNullException.ThrowIfNull(fileDialog);
+		return new ChartViewModel(this,this,this,fileDialog);
+	}
+
+	public ValueTask SetOutputAsync(
+		bool enabled,
+		CancellationToken cancellationToken)
+	{
+		IPowerSupplySession current=session ??
+			throw new InvalidOperationException("Brak połączenia z zasilaczem.");
+		return current.SetOutputAsync(enabled,cancellationToken);
+	}
+
+	public async ValueTask ExportAsync(
+		MeasurementExportKind kind,
+		string path,
+		CancellationToken cancellationToken)
+	{
+		MeasurementSample[] snapshot;
+		lock(measurementGate)
+		{
+			snapshot=[.. measurements];
+		}
+		await using FileStream stream=new(
+			path,
+			FileMode.Create,
+			FileAccess.Write,
+			FileShare.Read,
+			4096,
+			FileOptions.Asynchronous);
+		await using StreamWriter text=new(stream);
+		CsvMeasurementWriter writer=new(text);
+		await writer.WriteHeaderAsync(
+			MeasurementLayout.Single,
+			kind,
+			cancellationToken);
+		foreach(MeasurementSample sample in snapshot)
+		{
+			await writer.WriteAsync(sample,kind,cancellationToken);
+		}
+	}
 
 	public async ValueTask CloseAsync(CancellationToken cancellationToken)
 	{
@@ -240,9 +292,7 @@ public sealed class SingleSupplyViewModel : ObservableObject
 
 	private async Task ToggleOutputAsync(object? parameter)
 	{
-		IPowerSupplySession current=session ??
-			throw new InvalidOperationException("Brak połączenia z zasilaczem.");
-		await current.SetOutputAsync(!IsOutputOn,CancellationToken.None);
+		await SetOutputAsync(!IsOutputOn,CancellationToken.None);
 	}
 
 	private void ChangeVoltage(int delta)
@@ -359,6 +409,10 @@ public sealed class SingleSupplyViewModel : ObservableObject
 
 	private void UpdateMeasurement(MeasurementSample sample)
 	{
+		lock(measurementGate)
+		{
+			measurements.Add(sample);
+		}
 		MeasuredVoltageText=(sample.VoltageHundredths/100m)
 			.ToString("0.00",PolishCulture)+" V";
 		MeasuredCurrentText=(sample.CurrentThousandths/1000m)
@@ -376,6 +430,11 @@ public sealed class SingleSupplyViewModel : ObservableObject
 			ResistanceText=null;
 			IsResistanceVisible=false;
 		}
+		ChartSampleReceived?.Invoke(
+			this,
+			new ChartSample(
+				sample.Elapsed,
+				sample.CurrentThousandths/1000d));
 	}
 
 	private void Dispatch(Action action)

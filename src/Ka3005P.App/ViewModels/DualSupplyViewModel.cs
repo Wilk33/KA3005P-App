@@ -1,14 +1,17 @@
 using System.Globalization;
+using System.IO;
 using Ka3005P.App.Infrastructure;
 using Ka3005P.App.Services;
 using Ka3005P.Core.Configuration;
 using Ka3005P.Core.Dual;
+using Ka3005P.Core.Measurements;
 using Ka3005P.Core.Protocol;
 using Ka3005P.Core.Sessions;
 
 namespace Ka3005P.App.ViewModels;
 
-public sealed class DualSupplyViewModel : ObservableObject
+public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
+	IChartSampleSource,IMeasurementExporter
 {
 	private static readonly CultureInfo PolishCulture=
 		CultureInfo.GetCultureInfo("pl-PL");
@@ -16,6 +19,8 @@ public sealed class DualSupplyViewModel : ObservableObject
 	private readonly PortLeaseRegistry? leases;
 	private readonly ISingleSessionFactory? sessionFactory;
 	private readonly SynchronizationContext? uiContext=SynchronizationContext.Current;
+	private readonly object measurementGate=new();
+	private readonly List<DualMeasurement> measurements=[];
 	private DualPowerSupplyController? controller;
 	private PortLease? firstLease;
 	private PortLease? secondLease;
@@ -35,6 +40,9 @@ public sealed class DualSupplyViewModel : ObservableObject
 	private bool isOutputOn;
 	private bool setpointsAreValid=true;
 	private bool closing;
+
+	public event EventHandler<bool>? OutputStateChanged;
+	public event EventHandler<ChartSample>? ChartSampleReceived;
 
 	public DualSupplyViewModel(DualPowerSupplyController controller)
 	{
@@ -160,6 +168,7 @@ public sealed class DualSupplyViewModel : ObservableObject
 				OnPropertyChanged(nameof(OutputButtonText));
 				OnPropertyChanged(nameof(IsOff));
 				OnPropertyChanged(nameof(IsOn));
+				OutputStateChanged?.Invoke(this,value);
 			}
 		}
 	}
@@ -169,6 +178,66 @@ public sealed class DualSupplyViewModel : ObservableObject
 	public bool IsOffline => !IsConnected;
 	public bool IsOff => IsConnected && !IsOutputOn;
 	public bool IsOn => IsConnected && IsOutputOn;
+
+	public ChartViewModel CreateChartViewModel(IFileDialogService fileDialog)
+	{
+		ArgumentNullException.ThrowIfNull(fileDialog);
+		return new ChartViewModel(this,this,this,fileDialog);
+	}
+
+	public async ValueTask SetOutputAsync(
+		bool enabled,
+		CancellationToken cancellationToken)
+	{
+		DualPowerSupplyController current=controller ??
+			throw new InvalidOperationException("Brak połączenia Dual.");
+		DualOperationResult result=await current.SetOutputAsync(
+			enabled,
+			cancellationToken);
+		if(result.IsSuccess)
+		{
+			IsOutputOn=result.RequestedEnabled;
+			ErrorMessage=null;
+		}
+		else
+		{
+			IsOutputOn=false;
+			ErrorMessage=BuildOperationError(result);
+		}
+	}
+
+	public async ValueTask ExportAsync(
+		MeasurementExportKind kind,
+		string path,
+		CancellationToken cancellationToken)
+	{
+		DualMeasurement[] snapshot;
+		lock(measurementGate)
+		{
+			snapshot=[.. measurements];
+		}
+		MeasurementLayout layout=Mode switch
+		{
+			DualMode.Series=>MeasurementLayout.Series,
+			DualMode.Parallel=>MeasurementLayout.Parallel,
+			DualMode.Symmetric=>MeasurementLayout.Symmetric,
+			_=>throw new ArgumentOutOfRangeException()
+		};
+		await using FileStream stream=new(
+			path,
+			FileMode.Create,
+			FileAccess.Write,
+			FileShare.Read,
+			4096,
+			FileOptions.Asynchronous);
+		await using StreamWriter text=new(stream);
+		CsvMeasurementWriter writer=new(text);
+		await writer.WriteHeaderAsync(layout,kind,cancellationToken);
+		foreach(DualMeasurement measurement in snapshot)
+		{
+			await writer.WriteAsync(measurement,kind,cancellationToken);
+		}
+	}
 
 	public string MeasuredVoltageText
 	{
@@ -355,21 +424,7 @@ public sealed class DualSupplyViewModel : ObservableObject
 
 	private async Task ToggleOutputAsync(object? parameter)
 	{
-		DualPowerSupplyController current=controller ??
-			throw new InvalidOperationException("Brak połączenia Dual.");
-		DualOperationResult result=await current.SetOutputAsync(
-			!IsOutputOn,
-			CancellationToken.None);
-		if(result.IsSuccess)
-		{
-			IsOutputOn=result.RequestedEnabled;
-			ErrorMessage=null;
-		}
-		else
-		{
-			IsOutputOn=false;
-			ErrorMessage=BuildOperationError(result);
-		}
+		await SetOutputAsync(!IsOutputOn,CancellationToken.None);
 	}
 
 	private static string BuildOperationError(DualOperationResult result)
@@ -524,6 +579,10 @@ public sealed class DualSupplyViewModel : ObservableObject
 	{
 		Dispatch(()=>
 		{
+			lock(measurementGate)
+			{
+				measurements.Add(value);
+			}
 			MeasuredVoltageText=FormatVoltage(value.VoltageHundredths);
 			MeasuredCurrentText=FormatCurrent(value.CurrentThousandths);
 			FirstMeasurementText=
@@ -532,6 +591,12 @@ public sealed class DualSupplyViewModel : ObservableObject
 			SecondMeasurementText=
 				FormatVoltage(value.Second.VoltageHundredths)+" / "+
 				FormatCurrent(value.Second.CurrentThousandths);
+			TimeSpan elapsed=value.First.Elapsed >= value.Second.Elapsed
+				? value.First.Elapsed
+				: value.Second.Elapsed;
+			ChartSampleReceived?.Invoke(
+				this,
+				new ChartSample(elapsed,value.CurrentThousandths/1000d));
 		});
 	}
 

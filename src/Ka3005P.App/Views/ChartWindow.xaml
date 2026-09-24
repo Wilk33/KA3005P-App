@@ -1,0 +1,59 @@
+<Window
+	x:Class="Ka3005P.App.Views.ChartWindow"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:controls="clr-namespace:Ka3005P.App.Controls"
+	Title="Wykres"
+	Width="650"
+	Height="470"
+	MinWidth="480"
+	MinHeight="330"
+	WindowStartupLocation="CenterOwner">
+	<DockPanel>
+		<Menu DockPanel.Dock="Top">
+			<MenuItem Header="Zapisz jako">
+				<MenuItem Header="Napięcie CSV" Command="{Binding SaveVoltageCommand}" />
+				<MenuItem Header="Prąd CSV" Command="{Binding SaveCurrentCommand}" />
+			</MenuItem>
+		</Menu>
+		<Grid Margin="14">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto" />
+				<RowDefinition Height="*" />
+				<RowDefinition Height="Auto" />
+			</Grid.RowDefinitions>
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*" />
+					<ColumnDefinition Width="Auto" />
+					<ColumnDefinition Width="Auto" />
+				</Grid.ColumnDefinitions>
+				<controls:StatusLamps
+					IsOffline="False"
+					IsOff="{Binding IsOff}"
+					IsOn="{Binding IsOn}" />
+				<TextBlock
+					Grid.Column="1"
+					Margin="12,4"
+					FontFamily="Consolas"
+					FontSize="24"
+					Text="PRĄD [A]" />
+				<Button
+					Grid.Column="2"
+					Width="72"
+					Command="{Binding ToggleOutputCommand}"
+					Content="{Binding OutputButtonText}" />
+			</Grid>
+			<controls:CurrentChart
+				Grid.Row="1"
+				Margin="0,12,0,8"
+				MinimumY="{Binding MinimumY}"
+				MaximumY="{Binding MaximumY}"
+				Points="{Binding Points}" />
+			<TextBlock
+				Grid.Row="2"
+				Foreground="#FFFFA0A0"
+				Text="{Binding ErrorMessage}" />
+		</Grid>
+	</DockPanel>
+</Window>

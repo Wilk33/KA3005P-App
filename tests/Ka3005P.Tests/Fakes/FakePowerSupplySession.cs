@@ -13,6 +13,7 @@ internal sealed class FakePowerSupplySession : IPowerSupplySession
 	private TaskCompletionSource outputStarted=NewSignal();
 	private TaskCompletionSource outputRelease=NewSignal();
 	private bool blockNextOutput;
+	private int measurementRequests;
 
 	public event EventHandler<SessionSnapshot>? SnapshotChanged;
 	public event EventHandler<MeasurementSample>? MeasurementReceived;
@@ -28,6 +29,7 @@ internal sealed class FakePowerSupplySession : IPowerSupplySession
 	public CurrentSetpoint? RequestedCurrent =>
 		currents.Count == 0 ? null : CurrentSetpoint.FromThousandths(currents[^1]);
 	public bool StopRequested { get; private set; }
+	public int MeasurementRequests => measurementRequests;
 	public Exception? OutputFailure { get; set; }
 
 	public void BlockNextOutput()
@@ -86,6 +88,7 @@ internal sealed class FakePowerSupplySession : IPowerSupplySession
 
 	public void RequestMeasurement()
 	{
+		measurementRequests++;
 	}
 
 	public async ValueTask SetOutputAsync(

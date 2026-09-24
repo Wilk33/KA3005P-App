@@ -12,8 +12,11 @@
 	WindowStartupLocation="CenterOwner">
 	<DockPanel>
 		<Menu DockPanel.Dock="Top">
-			<MenuItem Header="Wykres" IsEnabled="False" />
-			<MenuItem Header="Zapisz jako" IsEnabled="False" />
+			<MenuItem Header="Wykres" Click="OpenChartClick" />
+			<MenuItem Header="Zapisz jako">
+				<MenuItem Header="Napięcie CSV" Click="SaveVoltageClick" />
+				<MenuItem Header="Prąd CSV" Click="SaveCurrentClick" />
+			</MenuItem>
 		</Menu>
 		<Grid Margin="18,12">
 			<Grid.RowDefinitions>
