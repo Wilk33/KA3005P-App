@@ -1,0 +1,62 @@
+<Window
+	x:Class="Ka3005P.App.Views.ManagerWindow"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	Title="Korad Manager"
+	Width="620"
+	Height="360"
+	MinWidth="560"
+	MinHeight="330"
+	WindowStartupLocation="CenterScreen">
+	<Grid Margin="18">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="*" />
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
+		</Grid.RowDefinitions>
+
+		<TextBlock
+			FontSize="22"
+			FontWeight="SemiBold"
+			Text="Wybierz sposób pracy z zasilaczem" />
+
+		<UniformGrid Grid.Row="1" Columns="3" Margin="0,14">
+			<Button Command="{Binding OpenSingleCommand}" ToolTip="Jeden zasilacz">
+				<StackPanel>
+					<Image Width="96" Height="96" Source="/Ka3005P.App;component/Assets/KoradS150.png" />
+					<TextBlock Margin="0,8,0,0" HorizontalAlignment="Center" Text="Pojedynczy" />
+				</StackPanel>
+			</Button>
+			<Button Command="{Binding OpenTwoSinglesCommand}" ToolTip="Dwa niezależne okna">
+				<StackPanel>
+					<Image Width="96" Height="96" Source="/Ka3005P.App;component/Assets/KoradM150.png" />
+					<TextBlock Margin="0,8,0,0" HorizontalAlignment="Center" Text="Dwa niezależne" />
+				</StackPanel>
+			</Button>
+			<Button Command="{Binding OpenDualCommand}" ToolTip="Dwa zasilacze sterowane wspólnie">
+				<StackPanel>
+					<Image Width="96" Height="96" Source="/Ka3005P.App;component/Assets/KoradD150.png" />
+					<TextBlock Margin="0,8,0,0" HorizontalAlignment="Center" Text="Dual Korad" />
+				</StackPanel>
+			</Button>
+		</UniformGrid>
+
+		<DockPanel Grid.Row="2">
+			<Button
+				DockPanel.Dock="Right"
+				Command="{Binding ChooseExportFolderCommand}"
+				Content="Folder zapisu" />
+			<TextBlock
+				Margin="8"
+				VerticalAlignment="Center"
+				Text="{Binding ExportDirectory,TargetNullValue=Nie wybrano folderu}" />
+		</DockPanel>
+
+		<TextBlock
+			Grid.Row="3"
+			Margin="8,4"
+			Foreground="#FFFFA0A0"
+			Text="{Binding ErrorMessage}" />
+	</Grid>
+</Window>
