@@ -44,7 +44,7 @@ Wartości graniczne pochodzą z kodu, nie z weryfikacji parametrów producenta: 
 
 `SerialPort.cpp` konfiguruje 9600 bit/s, 8 bitów danych, brak parzystości, jeden bit stopu, DTR wyłączone. Polecenia są wysyłane bez CR/LF.
 
-`ka3005p_CB.cpp` zawiera polecenia VSET1:, ISET1:, OUT0, OUT1, VOUT1?, IOUT1?, VSET1?, ISET1? i STATUS?. Odpowiedzi liczbowe są czytane jako pięć bajtów, status jako jeden bajt. Sama obecność metod odczytu nastaw i statusu nie dowodzi ich użycia przez główny interfejs.
+`ka3005p_CB.cpp` zawiera polecenia VSET1:, ISET1:, OUT0, OUT1, VOUT1?, IOUT1?, VSET1?, ISET1? i STATUS?. Odpowiedzi liczbowe są czytane jako pięć bajtów, status jako jeden bajt. Metody VSET1?, ISET1? i STATUS? nie są wywoływane przez główny interfejs. Użytkownik potwierdził, że brak odczytu zwrotnego nastaw był świadomym wyborem ze względu na ograniczenia transmisji i czas oczekiwania. Nowa aplikacja zachowa to zachowanie. VOUT1? i IOUT1? są pomiarami wyjścia, a nie odczytem nastaw.
 
 ## Wygląd
 
