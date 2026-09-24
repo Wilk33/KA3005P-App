@@ -1,4 +1,5 @@
 using Ka3005P.Core.Device;
+using Ka3005P.Core.Measurements;
 using Ka3005P.Core.Protocol;
 
 namespace Ka3005P.Core.Sessions;
@@ -7,22 +8,39 @@ public sealed class PowerSupplySession : IPowerSupplySession
 {
 	private readonly IPowerSupplyDevice device;
 	private readonly TimeProvider timeProvider;
+	private readonly TimeSpan pollingInterval;
 	private readonly SessionRequestQueue requests=new();
+	private readonly CancellationTokenSource lifetime=new();
 	private readonly object snapshotGate=new();
 	private readonly object lifecycleGate=new();
 	private SessionSnapshot snapshot=new();
 	private Task? runTask;
+	private Task? pollingTask;
 	private bool disposed;
 
 	public PowerSupplySession(IPowerSupplyDevice device,TimeProvider timeProvider)
+		: this(device,timeProvider,TimeSpan.FromMilliseconds(250))
+	{
+	}
+
+	public PowerSupplySession(
+		IPowerSupplyDevice device,
+		TimeProvider timeProvider,
+		TimeSpan pollingInterval)
 	{
 		ArgumentNullException.ThrowIfNull(device);
 		ArgumentNullException.ThrowIfNull(timeProvider);
+		if(pollingInterval <= TimeSpan.Zero)
+		{
+			throw new ArgumentOutOfRangeException(nameof(pollingInterval));
+		}
 		this.device=device;
 		this.timeProvider=timeProvider;
+		this.pollingInterval=pollingInterval;
 	}
 
 	public event EventHandler<SessionSnapshot>? SnapshotChanged;
+	public event EventHandler<MeasurementSample>? MeasurementReceived;
 
 	public SessionSnapshot Snapshot
 	{
@@ -30,7 +48,17 @@ public sealed class PowerSupplySession : IPowerSupplySession
 		{
 			lock(snapshotGate)
 			{
-				return snapshot;
+				if(snapshot.LastMeasurementTimestamp is not long timestamp)
+				{
+					return snapshot;
+				}
+
+				return snapshot with
+				{
+					MeasurementAge=timeProvider.GetElapsedTime(
+						timestamp,
+						timeProvider.GetTimestamp())
+				};
 			}
 		}
 	}
@@ -49,6 +77,7 @@ public sealed class PowerSupplySession : IPowerSupplySession
 			}
 
 			runTask=RunAsync();
+			pollingTask=PollMeasurementsAsync(lifetime.Token);
 		}
 		Publish(current=>current with { IsRunning=true });
 		return ValueTask.CompletedTask;
@@ -69,6 +98,22 @@ public sealed class PowerSupplySession : IPowerSupplySession
 
 		requests.Close();
 		await running.WaitAsync(cancellationToken).ConfigureAwait(false);
+		lifetime.Cancel();
+		Task? polling;
+		lock(lifecycleGate)
+		{
+			polling=pollingTask;
+		}
+		if(polling is not null)
+		{
+			try
+			{
+				await polling.WaitAsync(cancellationToken).ConfigureAwait(false);
+			}
+			catch(OperationCanceledException) when(lifetime.IsCancellationRequested)
+			{
+			}
+		}
 	}
 
 	public void RequestVoltage(VoltageSetpoint value)
@@ -123,6 +168,7 @@ public sealed class PowerSupplySession : IPowerSupplySession
 		disposed=true;
 		await StopAsync(CancellationToken.None).ConfigureAwait(false);
 		await device.DisposeAsync().ConfigureAwait(false);
+		lifetime.Dispose();
 	}
 
 	private async Task RunAsync()
@@ -186,15 +232,27 @@ public sealed class PowerSupplySession : IPowerSupplySession
 					});
 					output.Completion.TrySetResult();
 					break;
-				case MeasurementRequest:
+				case MeasurementRequest measurementRequest:
 					DeviceMeasurement measurement=
 						await device.ReadMeasurementAsync(CancellationToken.None).ConfigureAwait(false);
+					long timestamp=timeProvider.GetTimestamp();
+					DateTimeOffset recordedAt=timeProvider.GetUtcNow();
 					Publish(current=>current with
 					{
 						LastMeasurement=measurement,
-						LastMeasurementAt=timeProvider.GetUtcNow(),
+						LastMeasurementAt=recordedAt,
+						LastMeasurementTimestamp=timestamp,
+						MeasurementAge=TimeSpan.Zero,
 						Error=null
 					});
+					MeasurementReceived?.Invoke(
+						this,
+						new MeasurementSample(
+							recordedAt,
+							timestamp,
+							measurement.VoltageHundredths,
+							measurement.CurrentThousandths));
+					measurementRequest.Completion.TrySetResult();
 					break;
 				default:
 					throw new InvalidOperationException(
@@ -214,6 +272,28 @@ public sealed class PowerSupplySession : IPowerSupplySession
 			{
 				output.Completion.TrySetException(exception);
 			}
+			if(request is MeasurementRequest measurement)
+			{
+				measurement.Completion.TrySetResult();
+			}
+		}
+	}
+
+	private async Task PollMeasurementsAsync(CancellationToken cancellationToken)
+	{
+		while(true)
+		{
+			await Task.Delay(
+				pollingInterval,
+				timeProvider,
+				cancellationToken).ConfigureAwait(false);
+			if(Snapshot.OutputState != OutputState.On)
+			{
+				continue;
+			}
+
+			MeasurementRequest request=requests.RequestMeasurement();
+			await request.Completion.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
 		}
 	}
 

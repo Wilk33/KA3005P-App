@@ -14,5 +14,7 @@ public sealed record SessionSnapshot
 	public OutputState OutputState { get; init; }=OutputState.Unknown;
 	public DeviceMeasurement? LastMeasurement { get; init; }
 	public DateTimeOffset? LastMeasurementAt { get; init; }
+	public long? LastMeasurementTimestamp { get; init; }
+	public TimeSpan? MeasurementAge { get; init; }
 	public SessionError? Error { get; init; }
 }

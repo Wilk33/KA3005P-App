@@ -21,7 +21,11 @@ public sealed record SetOutputRequest : SessionRequest
 		new(TaskCreationOptions.RunContinuationsAsynchronously);
 }
 
-public sealed record MeasurementRequest : SessionRequest;
+public sealed record MeasurementRequest : SessionRequest
+{
+	internal TaskCompletionSource Completion { get; }=
+		new(TaskCreationOptions.RunContinuationsAsynchronously);
+}
 
 public sealed record CloseSessionRequest : SessionRequest;
 
@@ -108,6 +112,7 @@ public sealed class SessionRequestQueue
 			{
 				pendingVoltage=null;
 				pendingCurrent=null;
+				pendingMeasurement?.Completion.TrySetResult();
 				pendingMeasurement=null;
 			}
 		}
@@ -115,18 +120,21 @@ public sealed class SessionRequestQueue
 		return request;
 	}
 
-	public void RequestMeasurement()
+	public MeasurementRequest RequestMeasurement()
 	{
+		MeasurementRequest request;
 		lock(gate)
 		{
 			if(pendingClose is not null)
 			{
-				return;
+				throw new InvalidOperationException("Sesja jest zamykana.");
 			}
 
 			pendingMeasurement??=new MeasurementRequest();
+			request=pendingMeasurement;
 		}
 		Signal();
+		return request;
 	}
 
 	public void Close()
@@ -137,6 +145,7 @@ public sealed class SessionRequestQueue
 			pendingVoltage=null;
 			pendingCurrent=null;
 			pendingOutput=null;
+			pendingMeasurement?.Completion.TrySetResult();
 			pendingMeasurement=null;
 			pendingClose??=new CloseSessionRequest();
 		}

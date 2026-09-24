@@ -13,6 +13,9 @@ internal sealed class FakePowerSupplyDevice : IPowerSupplyDevice
 	private TaskCompletionSource operationStarted=NewSignal();
 	private TaskCompletionSource operationRelease=NewSignal();
 	private bool blockNextOperation;
+	private bool blockNextMeasurement;
+	private TaskCompletionSource measurementStarted=NewSignal();
+	private int measurementReads;
 	private int activeOperations;
 	private int maximumConcurrentOperations;
 
@@ -61,6 +64,7 @@ internal sealed class FakePowerSupplyDevice : IPowerSupplyDevice
 	}
 
 	public int MaximumConcurrentOperations => Volatile.Read(ref maximumConcurrentOperations);
+	public int MeasurementReads => Volatile.Read(ref measurementReads);
 	public DeviceMeasurement Measurement { get; set; }=new(1200,100);
 
 	public void BlockNextOperation()
@@ -79,6 +83,29 @@ internal sealed class FakePowerSupplyDevice : IPowerSupplyDevice
 		{
 			return operationStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
 		}
+	}
+
+	public void BlockNextMeasurement()
+	{
+		lock(gate)
+		{
+			blockNextMeasurement=true;
+			measurementStarted=NewSignal();
+			operationRelease=NewSignal();
+		}
+	}
+
+	public Task WaitUntilMeasurementStartsAsync()
+	{
+		lock(gate)
+		{
+			return measurementStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+		}
+	}
+
+	public Task WaitForMeasurementReadsAsync(int count)
+	{
+		return WaitUntilAsync(()=>MeasurementReads >= count);
 	}
 
 	public void ReleaseOperation()
@@ -130,6 +157,21 @@ internal sealed class FakePowerSupplyDevice : IPowerSupplyDevice
 	public async ValueTask<DeviceMeasurement> ReadMeasurementAsync(
 		CancellationToken cancellationToken)
 	{
+		Interlocked.Increment(ref measurementReads);
+		Task? release=null;
+		lock(gate)
+		{
+			if(blockNextMeasurement)
+			{
+				blockNextMeasurement=false;
+				measurementStarted.TrySetResult();
+				release=operationRelease.Task;
+			}
+		}
+		if(release is not null)
+		{
+			await release.WaitAsync(cancellationToken);
+		}
 		await ExecuteAsync("Measurement",()=>{ },cancellationToken);
 		return Measurement;
 	}
