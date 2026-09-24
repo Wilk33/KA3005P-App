@@ -45,10 +45,11 @@ public partial class App
 			return;
 		}
 
-		MessageBox.Show(
-			"Widok Dual Korad zostanie dodany w następnym etapie.",
-			"KA3005P",
-			MessageBoxButton.OK,
-			MessageBoxImage.Information);
+		DualSupplyWindow dualWindow=new()
+		{
+			Owner=MainWindow,
+			DataContext=new DualSupplyViewModel(portLeases,singleSessionFactory)
+		};
+		dualWindow.Show();
 	}
 }
