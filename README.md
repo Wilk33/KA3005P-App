@@ -1,12 +1,67 @@
 # KA3005P App
 
-Nowa aplikacja Windows do obsługi zasilaczy Korad KA3005P, odtwarzająca funkcjonalność i styl projektu referencyjnego C++ Builder.
+Natywna aplikacja Windows do obsługi zasilaczy Korad KA3005P, zachowująca funkcjonalność i styl projektu referencyjnego C++ Builder. Nowa architektura rozdziela interfejs od transmisji szeregowej, dzięki czemu zmiana nastaw podczas aktywnego wyjścia nie czeka na zakończenie pomiaru.
 
 ## Stan projektu
 
-2026-09-24: zakończono wstępny przegląd referencji. Repozytorium zawiera licencję, kopie zasobów graficznych i opis zakresu. Kod nowej aplikacji nie został jeszcze zaimplementowany.
+Pierwsza wersja obejmuje pojedynczy zasilacz, dwa niezależne okna oraz Dual Korad w trybie szeregowym, równoległym i symetrycznym. Ma wykres prądu, eksport CSV, obliczanie rezystancji, blokadę współdzielenia portów i tryb demonstracyjny bez sprzętu.
 
-Wybrany kierunek techniczny: C#, WPF, .NET 10. Szczegóły i ograniczenia opisano w [przeglądzie projektu](docs/2026-09-24-przeglad-i-kierunek.md). Zatwierdzony projekt techniczny, w tym rozwiązanie problemu lagów podczas zmiany nastaw, znajduje się w [specyfikacji](docs/superpowers/specs/2026-09-24-ka3005p-app-design.md).
+Projekt używa C#, WPF i .NET 10. Projekt techniczny, w tym rozwiązanie problemu lagów podczas zmiany nastaw, znajduje się w [specyfikacji](docs/superpowers/specs/2026-09-24-ka3005p-app-design.md).
+
+## Wymagania
+
+- Windows 10 lub Windows 11 w wersji x64.
+- .NET Desktop Runtime 10 dla pakietu framework-dependent.
+- Jeden port COM dla pojedynczego zasilacza albo dwa różne porty COM dla Dual.
+- Parametry transmisji są ustawiane przez aplikację: 9600 bit/s, 8 bitów danych, brak parzystości, 1 bit stopu, DTR wyłączone.
+
+## Uruchomienie
+
+Gotowy pakiet znajduje się w `artifacts/publish/win-x64`. Uruchom `Ka3005P.App.exe`, wybierz typ okna, wpisz port COM i wybierz `Offline`, aby nawiązać połączenie. Po połączeniu przycisk zmieni opis na `Online`.
+
+Tryb demonstracyjny nie otwiera portów COM:
+
+```powershell
+Ka3005P.App.exe --demo
+```
+
+W demo można otworzyć okno pojedyncze lub Dual, połączyć fikcyjne porty, zmieniać nastawy, używać ON/OFF, obserwować pomiary, wykres i eksport CSV. Pomiar przy OFF wynosi 0 V i 0 A, nawet jeśli nastawa pozostaje zapisana.
+
+## Budowanie i testy
+
+Wymagany jest SDK przypięty w `global.json`.
+
+```powershell
+dotnet restore Ka3005P.sln
+dotnet build Ka3005P.sln -c Release
+dotnet test Ka3005P.sln -c Release
+```
+
+Publikacja pakietu x64:
+
+```powershell
+dotnet publish src/Ka3005P.App/Ka3005P.App.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o artifacts/publish/win-x64
+```
+
+## Sterowanie i pomiary
+
+- Nastawy napięcia i ograniczenia prądu są wysyłane poleceniami zapisu. Aplikacja celowo nie odpytuje `VSET1?`, `ISET1?` ani `STATUS?`.
+- `VOUT1?` i `IOUT1?` oznaczają pomiar wyjścia. Nie są potwierdzeniem nastawy i przy OFF mogą zwracać zero.
+- Szybkie zmiany tej samej nastawy zastępują starszą zmianę oczekującą w kolejce. Ostatnia wartość zostaje wysłana po zakończeniu bieżącej operacji COM.
+- OFF ma pierwszeństwo przed oczekującymi nastawami i kolejnym pomiarem.
+- Wykres korzysta z tego samego strumienia próbek co okno główne i nie uruchamia dodatkowego odpytywania.
+
+## Tryby Dual
+
+- Szeregowy - logiczne napięcie jest dzielone pomiędzy oba zasilacze, a limit prądu jest wspólny.
+- Równoległy - logiczny prąd jest dzielony pomiędzy oba zasilacze, a napięcie jest wspólne.
+- Symetryczny - oba zasilacze otrzymują tę samą wartość, a aplikacja prezentuje pierwszą gałąź ze znakiem ujemnym.
+
+Wybór trybu w aplikacji nie przełącza przewodów. Przed włączeniem wyjścia użytkownik musi ręcznie wykonać połączenia właściwe dla wybranego układu i sprawdzić polaryzację. Trybu nie można zmienić podczas ON.
+
+## Eksport
+
+Menu `Zapisz jako` zapisuje napięcie albo prąd do pliku CSV z czasem od początku sesji. Układ kolumn odpowiada wybranemu trybowi. Pliki używają kropki dziesiętnej, średnika jako separatora i jednostek w drugim wierszu.
 
 ## Zakres referencyjny
 
@@ -27,4 +82,4 @@ Projekt jest udostępniany na warunkach **PolyForm Noncommercial License 1.0.0**
 
 Źródło tekstu: [PolyForm Project](https://polyformproject.org/licenses/noncommercial/1.0.0).
 
-Licencje przyszłych zależności i komponentów zewnętrznych zachowują własne warunki.
+Licencje zależności znajdują się w [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Procedura testu na rzeczywistym sprzęcie jest opisana w [docs/testing-hardware.md](docs/testing-hardware.md).

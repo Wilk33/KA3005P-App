@@ -108,6 +108,38 @@ public sealed class SingleSupplyViewModelTests
 	}
 
 	[Fact]
+	public async Task Connect_SendsDisplayedSetpoints()
+	{
+		FakeSingleSessionFactory factory=new();
+		SingleSupplyViewModel viewModel=new(new PortLeaseRegistry(),factory);
+
+		await viewModel.ConnectCommand.ExecuteAsync(null);
+
+		FakePowerSupplySession session=Assert.IsType<FakePowerSupplySession>(
+			factory.LastSession);
+		Assert.Equal(1200,session.RequestedVoltage?.Hundredths);
+		Assert.Equal(1000,session.RequestedCurrent?.Thousandths);
+		await viewModel.CloseAsync(CancellationToken.None);
+	}
+
+	[Fact]
+	public async Task Connect_EnablesOutputCommand()
+	{
+		SingleSupplyViewModel viewModel=new(
+			new PortLeaseRegistry(),
+			new FakeSingleSessionFactory());
+		int changes=0;
+		viewModel.ToggleOutputCommand.CanExecuteChanged+=(_,_)=>changes++;
+		Assert.False(viewModel.ToggleOutputCommand.CanExecute(null));
+
+		await viewModel.ConnectCommand.ExecuteAsync(null);
+
+		Assert.True(viewModel.ToggleOutputCommand.CanExecute(null));
+		Assert.True(changes>0);
+		await viewModel.CloseAsync(CancellationToken.None);
+	}
+
+	[Fact]
 	public async Task Connect_RejectsPortAlreadyLeasedByAnotherWindow()
 	{
 		PortLeaseRegistry leases=new();

@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using Ka3005P.App.Demo;
 using Ka3005P.App.Services;
 using Ka3005P.App.ViewModels;
 using Ka3005P.App.Views;
@@ -10,12 +11,18 @@ namespace Ka3005P.App;
 public partial class App
 {
 	private readonly PortLeaseRegistry portLeases=new();
-	private readonly ISingleSessionFactory singleSessionFactory=
+	private ISingleSessionFactory singleSessionFactory=
 		new SerialSingleSessionFactory(TimeProvider.System);
 
 	protected override async void OnStartup(StartupEventArgs e)
 	{
 		base.OnStartup(e);
+		bool demoMode=e.Args.Any(argument=>
+			string.Equals(argument,"--demo",StringComparison.OrdinalIgnoreCase));
+		if(demoMode)
+		{
+			singleSessionFactory=new DemoSingleSessionFactory(TimeProvider.System);
+		}
 		string dataDirectory=Path.Combine(
 			Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
 			"KA3005P App");
@@ -26,7 +33,8 @@ public partial class App
 		await viewModel.InitializeAsync(CancellationToken.None);
 		ManagerWindow window=new()
 		{
-			DataContext=viewModel
+			DataContext=viewModel,
+			Title=demoMode ? "Korad Manager - DEMO" : "Korad Manager"
 		};
 		MainWindow=window;
 		window.Show();

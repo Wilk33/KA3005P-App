@@ -5,6 +5,8 @@
 	xmlns:controls="clr-namespace:Ka3005P.App.Controls"
 	xmlns:dual="clr-namespace:Ka3005P.Core.Dual;assembly=Ka3005P.Core"
 	Title="Dual Korad"
+	Background="{StaticResource KoradBackgroundBrush}"
+	Foreground="{StaticResource KoradTextBrush}"
 	Width="480"
 	Height="590"
 	MinWidth="450"

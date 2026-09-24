@@ -18,6 +18,7 @@ public sealed class MeasurementLoopTests
 
 		time.Advance(TimeSpan.FromSeconds(1));
 		Assert.Equal(0,device.MeasurementReads);
+		await time.WaitForTimerCountAsync(2);
 
 		await session.SetOutputAsync(true,CancellationToken.None);
 		device.BlockNextMeasurement();

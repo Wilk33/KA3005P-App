@@ -154,6 +154,8 @@ public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
 			{
 				OnPropertyChanged(nameof(ConnectionStatus));
 				OnPropertyChanged(nameof(IsOffline));
+				ConnectCommand?.RaiseCanExecuteChanged();
+				ToggleOutputCommand?.RaiseCanExecuteChanged();
 			}
 		}
 	}

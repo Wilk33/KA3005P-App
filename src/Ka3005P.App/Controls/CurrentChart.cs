@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 using Ka3005P.App.ViewModels;
@@ -64,6 +65,21 @@ public sealed class CurrentChart : FrameworkElement
 				gridPen,
 				new Point(area.Left,y),
 				new Point(area.Right,y));
+			if(index%2 == 0)
+			{
+				double value=MaximumY-((MaximumY-MinimumY)*index/10d);
+				FormattedText label=new(
+					value.ToString("0.0",CultureInfo.InvariantCulture),
+					CultureInfo.InvariantCulture,
+					FlowDirection.LeftToRight,
+					new Typeface("Consolas"),
+					10,
+					Brushes.White,
+					VisualTreeHelper.GetDpi(this).PixelsPerDip);
+				drawingContext.DrawText(
+					label,
+					new Point(Math.Max(0,area.Left-label.Width-4),y-label.Height/2));
+			}
 		}
 
 		ChartPoint[] points=Points?.ToArray() ?? [];

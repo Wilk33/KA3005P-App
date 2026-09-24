@@ -123,6 +123,8 @@ public sealed class SingleSupplyViewModel : ObservableObject,IOutputController,
 			{
 				OnPropertyChanged(nameof(ConnectionStatus));
 				OnPropertyChanged(nameof(IsOffline));
+				ConnectCommand?.RaiseCanExecuteChanged();
+				ToggleOutputCommand?.RaiseCanExecuteChanged();
 			}
 		}
 	}
@@ -282,6 +284,8 @@ public sealed class SingleSupplyViewModel : ObservableObject,IOutputController,
 			AttachSession(created);
 			IsConnected=true;
 			ErrorMessage=null;
+			CommitVoltage();
+			CommitCurrent();
 		}
 		catch
 		{

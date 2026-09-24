@@ -67,6 +67,9 @@ public partial class SingleSupplyWindow : Window
 		e.Cancel=true;
 		await viewModel.CloseAsync(CancellationToken.None);
 		closeCompleted=true;
-		Close();
+		if(!Dispatcher.HasShutdownStarted)
+		{
+			await Dispatcher.InvokeAsync(Close);
+		}
 	}
 }

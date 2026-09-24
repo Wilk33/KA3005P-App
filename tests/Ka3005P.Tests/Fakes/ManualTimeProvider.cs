@@ -6,6 +6,8 @@ internal sealed class ManualTimeProvider : TimeProvider
 	private readonly List<ManualTimer> timers=[];
 	private DateTimeOffset utcNow=new(2026,9,24,8,0,0,TimeSpan.Zero);
 	private long timestamp;
+	private int createdTimerCount;
+	private TaskCompletionSource timerCreated=NewSignal();
 
 	public override long TimestampFrequency => TimeSpan.TicksPerSecond;
 
@@ -37,8 +39,29 @@ internal sealed class ManualTimeProvider : TimeProvider
 		{
 			timer=new ManualTimer(this,callback,state,dueTime,period,timestamp);
 			timers.Add(timer);
+			createdTimerCount++;
+			TaskCompletionSource signal=timerCreated;
+			timerCreated=NewSignal();
+			signal.TrySetResult();
 		}
 		return timer;
+	}
+
+	public async Task WaitForTimerCountAsync(int expected)
+	{
+		while(true)
+		{
+			Task signal;
+			lock(gate)
+			{
+				if(createdTimerCount>=expected)
+				{
+					return;
+				}
+				signal=timerCreated.Task;
+			}
+			await signal.WaitAsync(TimeSpan.FromSeconds(2));
+		}
 	}
 
 	public void Advance(TimeSpan duration)
@@ -68,6 +91,11 @@ internal sealed class ManualTimeProvider : TimeProvider
 		{
 			timers.Remove(timer);
 		}
+	}
+
+	private static TaskCompletionSource NewSignal()
+	{
+		return new(TaskCreationOptions.RunContinuationsAsynchronously);
 	}
 
 	private sealed class ManualTimer : ITimer

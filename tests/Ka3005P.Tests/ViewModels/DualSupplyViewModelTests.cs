@@ -30,6 +30,23 @@ public sealed class DualSupplyViewModelTests
 	}
 
 	[Fact]
+	public async Task Connect_EnablesOutputCommand()
+	{
+		DualSupplyViewModel viewModel=new(
+			new PortLeaseRegistry(),
+			new FakeSessionFactory());
+		int changes=0;
+		viewModel.ToggleOutputCommand.CanExecuteChanged+=(_,_)=>changes++;
+		Assert.False(viewModel.ToggleOutputCommand.CanExecute(null));
+
+		await viewModel.ConnectCommand.ExecuteAsync(null);
+
+		Assert.True(viewModel.ToggleOutputCommand.CanExecute(null));
+		Assert.True(changes>0);
+		await viewModel.CloseAsync(CancellationToken.None);
+	}
+
+	[Fact]
 	public async Task Connect_RejectsIdenticalPortNames()
 	{
 		DualSupplyViewModel viewModel=new(
