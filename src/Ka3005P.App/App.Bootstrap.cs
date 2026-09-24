@@ -9,6 +9,10 @@ namespace Ka3005P.App;
 
 public partial class App
 {
+	private readonly PortLeaseRegistry portLeases=new();
+	private readonly ISingleSessionFactory singleSessionFactory=
+		new SerialSingleSessionFactory(TimeProvider.System);
+
 	protected override async void OnStartup(StartupEventArgs e)
 	{
 		base.OnStartup(e);
@@ -28,13 +32,21 @@ public partial class App
 		window.Show();
 	}
 
-	private static void OpenRequestedWindow(WindowRequest request)
+	private void OpenRequestedWindow(WindowRequest request)
 	{
-		string name=request.Kind == WindowKind.Single
-			? "Pojedynczy zasilacz"
-			: "Dual Korad";
+		if(request.Kind == WindowKind.Single)
+		{
+			SingleSupplyWindow window=new()
+			{
+				Owner=MainWindow,
+				DataContext=new SingleSupplyViewModel(portLeases,singleSessionFactory)
+			};
+			window.Show();
+			return;
+		}
+
 		MessageBox.Show(
-			$"Widok {name} zostanie otwarty przez moduł sterowania.",
+			"Widok Dual Korad zostanie dodany w następnym etapie.",
 			"KA3005P",
 			MessageBoxButton.OK,
 			MessageBoxImage.Information);

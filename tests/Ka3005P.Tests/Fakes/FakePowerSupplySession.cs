@@ -1,3 +1,4 @@
+using Ka3005P.Core.Device;
 using Ka3005P.Core.Measurements;
 using Ka3005P.Core.Protocol;
 using Ka3005P.Core.Sessions;
@@ -22,6 +23,11 @@ internal sealed class FakePowerSupplySession : IPowerSupplySession
 	public IReadOnlyList<int> Currents => currents;
 	public IReadOnlyList<bool> Outputs => outputs;
 	public bool OutputRequested => outputs.Count > 0;
+	public VoltageSetpoint? RequestedVoltage =>
+		voltages.Count == 0 ? null : VoltageSetpoint.FromHundredths(voltages[^1]);
+	public CurrentSetpoint? RequestedCurrent =>
+		currents.Count == 0 ? null : CurrentSetpoint.FromThousandths(currents[^1]);
+	public bool StopRequested { get; private set; }
 	public Exception? OutputFailure { get; set; }
 
 	public void BlockNextOutput()
@@ -50,6 +56,7 @@ internal sealed class FakePowerSupplySession : IPowerSupplySession
 
 	public ValueTask StopAsync(CancellationToken cancellationToken)
 	{
+		StopRequested=true;
 		Snapshot=Snapshot with { IsRunning=false };
 		SnapshotChanged?.Invoke(this,Snapshot);
 		return ValueTask.CompletedTask;
@@ -107,6 +114,13 @@ internal sealed class FakePowerSupplySession : IPowerSupplySession
 
 	public void PublishMeasurement(MeasurementSample sample)
 	{
+		Snapshot=Snapshot with
+		{
+			LastMeasurement=new DeviceMeasurement(
+				sample.VoltageHundredths,
+				sample.CurrentThousandths)
+		};
+		SnapshotChanged?.Invoke(this,Snapshot);
 		MeasurementReceived?.Invoke(this,sample);
 	}
 
