@@ -90,6 +90,7 @@
 		<Setter Property="FontFamily" Value="Consolas" />
 		<Setter Property="FontSize" Value="20" />
 		<Setter Property="FontWeight" Value="SemiBold" />
+		<Setter Property="VerticalContentAlignment" Value="Center" />
 	</Style>
 
 	<Style TargetType="ComboBox">
