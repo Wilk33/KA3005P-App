@@ -10,6 +10,37 @@ namespace Ka3005P.Tests.ViewModels;
 public sealed class SingleSupplyViewModelTests
 {
 	[Fact]
+	public void AvailablePorts_RestorePreferredOrChooseFirst()
+	{
+		SingleSupplyViewModel preferred=new(
+			new PortLeaseRegistry(),
+			new FakeSingleSessionFactory(),
+			["COM2","COM7"],
+			"COM7");
+		SingleSupplyViewModel fallback=new(
+			new PortLeaseRegistry(),
+			new FakeSingleSessionFactory(),
+			["COM2","COM7"],
+			"COM9");
+
+		Assert.Equal("COM7",preferred.SelectedPort);
+		Assert.Equal("COM2",fallback.SelectedPort);
+		Assert.True(preferred.ConnectCommand.CanExecute(null));
+	}
+
+	[Fact]
+	public void NoAvailablePort_DisablesConnect()
+	{
+		SingleSupplyViewModel viewModel=new(
+			new PortLeaseRegistry(),
+			new FakeSingleSessionFactory(),
+			[]);
+
+		Assert.Null(viewModel.SelectedPort);
+		Assert.False(viewModel.ConnectCommand.CanExecute(null));
+	}
+
+	[Fact]
 	public void IncrementVoltage_UpdatesUiAndQueuesRequestSynchronously()
 	{
 		FakePowerSupplySession session=new();
@@ -162,7 +193,11 @@ public sealed class SingleSupplyViewModelTests
 	{
 		PortLeaseRegistry leases=new();
 		FakeSingleSessionFactory factory=new();
-		SingleSupplyViewModel viewModel=new(leases,factory){PortName="COM7"};
+		SingleSupplyViewModel viewModel=new(
+			leases,
+			factory,
+			["COM7"],
+			"COM7");
 		await viewModel.ConnectCommand.ExecuteAsync(null);
 		FakePowerSupplySession session=Assert.IsType<FakePowerSupplySession>(factory.LastSession);
 

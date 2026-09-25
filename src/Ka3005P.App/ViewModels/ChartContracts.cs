@@ -5,7 +5,9 @@ namespace Ka3005P.App.ViewModels;
 public interface IOutputController
 {
 	event EventHandler<bool>? OutputStateChanged;
+	event EventHandler<bool>? ConnectionStateChanged;
 	bool IsOutputOn { get; }
+	bool IsConnected { get; }
 	ValueTask SetOutputAsync(bool enabled,CancellationToken cancellationToken);
 }
 

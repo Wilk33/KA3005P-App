@@ -67,10 +67,37 @@ public sealed class ChartViewModelTests
 		Assert.Equal(0,session.MeasurementRequests);
 	}
 
+	[Fact]
+	public void ToggleOutput_TracksConnectionState()
+	{
+		FakeOutputController output=new();
+		using ChartViewModel chart=new(output);
+
+		Assert.False(chart.ToggleOutputCommand.CanExecute(null));
+		Assert.True(chart.IsOffline);
+		Assert.False(chart.IsOff);
+		Assert.False(chart.IsOn);
+		output.SetConnected(true);
+		Assert.True(chart.ToggleOutputCommand.CanExecute(null));
+		Assert.True(chart.IsOff);
+		output.SetConnected(false);
+		Assert.False(chart.ToggleOutputCommand.CanExecute(null));
+		Assert.True(chart.IsOffline);
+		Assert.False(chart.IsOff);
+	}
+
 	private sealed class FakeOutputController : IOutputController
 	{
 		public event EventHandler<bool>? OutputStateChanged;
+		public event EventHandler<bool>? ConnectionStateChanged;
 		public bool IsOutputOn { get; private set; }
+		public bool IsConnected { get; private set; }
+
+		public void SetConnected(bool connected)
+		{
+			IsConnected=connected;
+			ConnectionStateChanged?.Invoke(this,connected);
+		}
 
 		public ValueTask SetOutputAsync(bool enabled,CancellationToken cancellationToken)
 		{

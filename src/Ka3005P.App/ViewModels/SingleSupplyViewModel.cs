@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO;
+using System.Collections.ObjectModel;
 using Ka3005P.App.Infrastructure;
 using Ka3005P.App.Services;
 using Ka3005P.Core.Configuration;
@@ -22,7 +23,7 @@ public sealed class SingleSupplyViewModel : ObservableObject,IOutputController,
 	private readonly List<MeasurementSample> measurements=[];
 	private IPowerSupplySession? session;
 	private PortLease? portLease;
-	private string portName="COM5";
+	private string? selectedPort;
 	private string voltageText="12,00";
 	private string currentText="1,000";
 	private string measuredVoltageText="0,00 V";
@@ -36,6 +37,7 @@ public sealed class SingleSupplyViewModel : ObservableObject,IOutputController,
 	private bool closing;
 
 	public event EventHandler<bool>? OutputStateChanged;
+	public event EventHandler<bool>? ConnectionStateChanged;
 	public event EventHandler<ChartSample>? ChartSampleReceived;
 
 	public SingleSupplyViewModel(IPowerSupplySession session)
@@ -50,15 +52,28 @@ public sealed class SingleSupplyViewModel : ObservableObject,IOutputController,
 
 	public SingleSupplyViewModel(
 		PortLeaseRegistry leases,
-		ISingleSessionFactory sessionFactory)
+		ISingleSessionFactory sessionFactory,
+		IReadOnlyList<string>? availablePorts=null,
+		string? preferredPort=null)
 	{
 		ArgumentNullException.ThrowIfNull(leases);
 		ArgumentNullException.ThrowIfNull(sessionFactory);
 		this.leases=leases;
 		this.sessionFactory=sessionFactory;
+		UpdateAvailablePorts(availablePorts ?? ["COM5"]);
+		if(preferredPort is not null &&
+			AvailablePorts.Contains(preferredPort,StringComparer.OrdinalIgnoreCase))
+		{
+			SelectedPort=AvailablePorts.First(port=>
+				string.Equals(port,preferredPort,StringComparison.OrdinalIgnoreCase));
+		}
 		ConnectCommand=new AsyncRelayCommand(
 			ConnectAsync,
-			_=>!IsConnected,
+			_=>!IsConnected &&
+				SelectedPort is not null &&
+				AvailablePorts.Contains(
+					SelectedPort,
+					StringComparer.OrdinalIgnoreCase),
 			exception=>ErrorMessage=exception.Message);
 		InitializeCommands();
 	}
@@ -72,11 +87,28 @@ public sealed class SingleSupplyViewModel : ObservableObject,IOutputController,
 	public RelayCommand CommitCurrentCommand { get; private set; }=null!;
 	public AsyncRelayCommand ToggleOutputCommand { get; private set; }=null!;
 
+	public ObservableCollection<string> AvailablePorts { get; }=[];
+
+	public string? SelectedPort
+	{
+		get => selectedPort;
+		set
+		{
+			if(SetProperty(ref selectedPort,value))
+			{
+				OnPropertyChanged(nameof(PortName));
+				ConnectCommand?.RaiseCanExecuteChanged();
+			}
+		}
+	}
+
 	public string PortName
 	{
-		get => portName;
-		set => SetProperty(ref portName,value);
+		get => SelectedPort ?? string.Empty;
+		set => SelectedPort=value;
 	}
+
+	public bool CanSelectPort => !IsConnected;
 
 	public string VoltageText
 	{
@@ -123,8 +155,10 @@ public sealed class SingleSupplyViewModel : ObservableObject,IOutputController,
 			{
 				OnPropertyChanged(nameof(ConnectionStatus));
 				OnPropertyChanged(nameof(IsOffline));
+				OnPropertyChanged(nameof(CanSelectPort));
 				ConnectCommand?.RaiseCanExecuteChanged();
 				ToggleOutputCommand?.RaiseCanExecuteChanged();
+				ConnectionStateChanged?.Invoke(this,value);
 			}
 		}
 	}
@@ -166,6 +200,33 @@ public sealed class SingleSupplyViewModel : ObservableObject,IOutputController,
 	{
 		ArgumentNullException.ThrowIfNull(fileDialog);
 		return new ChartViewModel(this,this,this,fileDialog);
+	}
+
+	public void UpdateAvailablePorts(IReadOnlyList<string> ports)
+	{
+		ArgumentNullException.ThrowIfNull(ports);
+		string? current=SelectedPort;
+		AvailablePorts.Clear();
+		foreach(string port in ports)
+		{
+			AvailablePorts.Add(port);
+		}
+		if(IsConnected && current is not null &&
+			!AvailablePorts.Contains(current,StringComparer.OrdinalIgnoreCase))
+		{
+			AvailablePorts.Add(current);
+		}
+		if(current is not null &&
+			AvailablePorts.Contains(current,StringComparer.OrdinalIgnoreCase))
+		{
+			SelectedPort=AvailablePorts.First(port=>
+				string.Equals(port,current,StringComparison.OrdinalIgnoreCase));
+		}
+		else
+		{
+			SelectedPort=AvailablePorts.FirstOrDefault();
+		}
+		ConnectCommand?.RaiseCanExecuteChanged();
 	}
 
 	public ValueTask SetOutputAsync(
@@ -268,9 +329,11 @@ public sealed class SingleSupplyViewModel : ObservableObject,IOutputController,
 		{
 			return;
 		}
-		if(!leases.TryAcquire(PortName,out PortLease? acquired))
+		string port=SelectedPort ??
+			throw new InvalidOperationException("Wybierz aktywny port COM.");
+		if(!leases.TryAcquire(port,out PortLease? acquired))
 		{
-			ErrorMessage=$"Port {PortName.Trim()} jest już używany.";
+			ErrorMessage=$"Port {port} jest już używany.";
 			return;
 		}
 

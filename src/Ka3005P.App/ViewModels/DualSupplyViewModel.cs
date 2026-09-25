@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO;
+using System.Collections.ObjectModel;
 using Ka3005P.App.Infrastructure;
 using Ka3005P.App.Services;
 using Ka3005P.Core.Configuration;
@@ -25,8 +26,10 @@ public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
 	private PortLease? firstLease;
 	private PortLease? secondLease;
 	private DualMode mode=DualMode.Series;
-	private string firstPortName="COM5";
-	private string secondPortName="COM6";
+	private readonly List<string> portSnapshot=[];
+	private string? selectedFirstPort;
+	private string? selectedSecondPort;
+	private bool updatingPorts;
 	private string voltageText="12,00";
 	private string currentText="1,000";
 	private string measuredVoltageText="0,00 V";
@@ -42,6 +45,7 @@ public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
 	private bool closing;
 
 	public event EventHandler<bool>? OutputStateChanged;
+	public event EventHandler<bool>? ConnectionStateChanged;
 	public event EventHandler<ChartSample>? ChartSampleReceived;
 
 	public DualSupplyViewModel(DualPowerSupplyController controller)
@@ -58,15 +62,20 @@ public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
 
 	public DualSupplyViewModel(
 		PortLeaseRegistry leases,
-		ISingleSessionFactory sessionFactory)
+		ISingleSessionFactory sessionFactory,
+		IReadOnlyList<string>? availablePorts=null,
+		string? preferredFirstPort=null,
+		string? preferredSecondPort=null)
 	{
 		ArgumentNullException.ThrowIfNull(leases);
 		ArgumentNullException.ThrowIfNull(sessionFactory);
 		this.leases=leases;
 		this.sessionFactory=sessionFactory;
+		UpdateAvailablePorts(availablePorts ?? ["COM5","COM6"]);
+		RestorePreferredPorts(preferredFirstPort,preferredSecondPort);
 		ConnectCommand=new AsyncRelayCommand(
 			ConnectAsync,
-			_=>!IsConnected,
+			_=>CanConnect(),
 			exception=>ErrorMessage=exception.Message);
 		InitializeCommands();
 		UpdatePhysicalSetpointTexts();
@@ -80,6 +89,7 @@ public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
 	public RelayCommand CommitVoltageCommand { get; private set; }=null!;
 	public RelayCommand CommitCurrentCommand { get; private set; }=null!;
 	public AsyncRelayCommand ToggleOutputCommand { get; private set; }=null!;
+	public AsyncRelayCommand ChangeModeCommand { get; private set; }=null!;
 
 	public DualMode Mode
 	{
@@ -105,22 +115,57 @@ public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
 			if(SetpointsAreValid)
 			{
 				controller?.SetMode(value);
+				controller?.RequestVoltage(
+					VoltageSetpoint.FromHundredths(voltageHundredths));
+				controller?.RequestCurrent(
+					CurrentSetpoint.FromThousandths(currentThousandths));
 				UpdatePhysicalSetpointTexts();
+			}
+		}
+	}
+
+	public ObservableCollection<string> AvailableFirstPorts { get; }=[];
+	public ObservableCollection<string> AvailableSecondPorts { get; }=[];
+
+	public string? SelectedFirstPort
+	{
+		get => selectedFirstPort;
+		set
+		{
+			if(SetProperty(ref selectedFirstPort,value) && !updatingPorts)
+			{
+				OnPropertyChanged(nameof(FirstPortName));
+				RebuildPortLists();
+			}
+		}
+	}
+
+	public string? SelectedSecondPort
+	{
+		get => selectedSecondPort;
+		set
+		{
+			if(SetProperty(ref selectedSecondPort,value) && !updatingPorts)
+			{
+				OnPropertyChanged(nameof(SecondPortName));
+				RebuildPortLists();
 			}
 		}
 	}
 
 	public string FirstPortName
 	{
-		get => firstPortName;
-		set => SetProperty(ref firstPortName,value);
+		get => SelectedFirstPort ?? string.Empty;
+		set => SelectedFirstPort=value;
 	}
 
 	public string SecondPortName
 	{
-		get => secondPortName;
-		set => SetProperty(ref secondPortName,value);
+		get => SelectedSecondPort ?? string.Empty;
+		set => SelectedSecondPort=value;
 	}
+
+	public bool CanSelectPort => !IsConnected;
 
 	public string VoltageText
 	{
@@ -154,8 +199,10 @@ public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
 			{
 				OnPropertyChanged(nameof(ConnectionStatus));
 				OnPropertyChanged(nameof(IsOffline));
+				OnPropertyChanged(nameof(CanSelectPort));
 				ConnectCommand?.RaiseCanExecuteChanged();
 				ToggleOutputCommand?.RaiseCanExecuteChanged();
+				ConnectionStateChanged?.Invoke(this,value);
 			}
 		}
 	}
@@ -185,6 +232,31 @@ public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
 	{
 		ArgumentNullException.ThrowIfNull(fileDialog);
 		return new ChartViewModel(this,this,this,fileDialog);
+	}
+
+	public void UpdateAvailablePorts(IReadOnlyList<string> ports)
+	{
+		ArgumentNullException.ThrowIfNull(ports);
+		portSnapshot.Clear();
+		portSnapshot.AddRange(ports);
+		if(IsConnected)
+		{
+			if(SelectedFirstPort is not null &&
+				!portSnapshot.Contains(
+					SelectedFirstPort,
+					StringComparer.OrdinalIgnoreCase))
+			{
+				portSnapshot.Add(SelectedFirstPort);
+			}
+			if(SelectedSecondPort is not null &&
+				!portSnapshot.Contains(
+					SelectedSecondPort,
+					StringComparer.OrdinalIgnoreCase))
+			{
+				portSnapshot.Add(SelectedSecondPort);
+			}
+		}
+		RebuildPortLists();
 	}
 
 	public async ValueTask SetOutputAsync(
@@ -329,6 +401,10 @@ public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
 			ToggleOutputAsync,
 			_=>IsConnected,
 			exception=>ErrorMessage=exception.Message);
+		ChangeModeCommand=new AsyncRelayCommand(
+			ChangeModeAsync,
+			parameter=>parameter is DualMode,
+			exception=>ErrorMessage=exception.Message);
 	}
 
 	private async Task ConnectAsync(object? parameter)
@@ -337,8 +413,10 @@ public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
 		{
 			return;
 		}
-		string firstPort=FirstPortName.Trim().ToUpperInvariant();
-		string secondPort=SecondPortName.Trim().ToUpperInvariant();
+		string firstPort=SelectedFirstPort ??
+			throw new InvalidOperationException("Wybierz pierwszy port COM.");
+		string secondPort=SelectedSecondPort ??
+			throw new InvalidOperationException("Wybierz drugi port COM.");
 		if(string.Equals(firstPort,secondPort,StringComparison.OrdinalIgnoreCase))
 		{
 			ErrorMessage="Dla trybu Dual wybierz dwa różne porty COM.";
@@ -427,6 +505,27 @@ public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
 	private async Task ToggleOutputAsync(object? parameter)
 	{
 		await SetOutputAsync(!IsOutputOn,CancellationToken.None);
+	}
+
+	private async Task ChangeModeAsync(object? parameter)
+	{
+		if(parameter is not DualMode target || target == Mode)
+		{
+			return;
+		}
+		if(controller is not null)
+		{
+			DualOperationResult off=await controller.SetOutputAsync(
+				false,
+				CancellationToken.None);
+			if(!off.IsSuccess)
+			{
+				ErrorMessage=BuildOperationError(off);
+				return;
+			}
+			IsOutputOn=false;
+		}
+		Mode=target;
 	}
 
 	private static string BuildOperationError(DualOperationResult result)
@@ -669,4 +768,104 @@ public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
 	private sealed record SessionCreationResult(
 		IPowerSupplySession? Session,
 		Exception? Error);
+
+	private bool CanConnect()
+	{
+		return !IsConnected &&
+			SelectedFirstPort is not null &&
+			SelectedSecondPort is not null &&
+			!string.Equals(
+				SelectedFirstPort,
+				SelectedSecondPort,
+				StringComparison.OrdinalIgnoreCase) &&
+			portSnapshot.Contains(
+				SelectedFirstPort,
+				StringComparer.OrdinalIgnoreCase) &&
+			portSnapshot.Contains(
+				SelectedSecondPort,
+				StringComparer.OrdinalIgnoreCase);
+	}
+
+	private void RestorePreferredPorts(string? first,string? second)
+	{
+		if(first is not null &&
+			portSnapshot.Contains(first,StringComparer.OrdinalIgnoreCase))
+		{
+			selectedFirstPort=portSnapshot.First(port=>
+				string.Equals(port,first,StringComparison.OrdinalIgnoreCase));
+		}
+		if(second is not null &&
+			portSnapshot.Contains(second,StringComparer.OrdinalIgnoreCase) &&
+			!string.Equals(
+				selectedFirstPort,
+				second,
+				StringComparison.OrdinalIgnoreCase))
+		{
+			selectedSecondPort=portSnapshot.First(port=>
+				string.Equals(port,second,StringComparison.OrdinalIgnoreCase));
+		}
+		RebuildPortLists();
+	}
+
+	private void RebuildPortLists()
+	{
+		updatingPorts=true;
+		try
+		{
+			if(selectedFirstPort is null ||
+				!portSnapshot.Contains(
+					selectedFirstPort,
+					StringComparer.OrdinalIgnoreCase))
+			{
+				selectedFirstPort=portSnapshot.FirstOrDefault(port=>
+					!string.Equals(
+						port,
+						selectedSecondPort,
+						StringComparison.OrdinalIgnoreCase));
+			}
+			if(selectedSecondPort is null ||
+				!portSnapshot.Contains(
+					selectedSecondPort,
+					StringComparer.OrdinalIgnoreCase) ||
+				string.Equals(
+					selectedFirstPort,
+					selectedSecondPort,
+					StringComparison.OrdinalIgnoreCase))
+			{
+				selectedSecondPort=portSnapshot.FirstOrDefault(port=>
+					!string.Equals(
+						port,
+						selectedFirstPort,
+						StringComparison.OrdinalIgnoreCase));
+			}
+
+			AvailableFirstPorts.Clear();
+			foreach(string port in portSnapshot.Where(port=>
+				!string.Equals(
+					port,
+					selectedSecondPort,
+					StringComparison.OrdinalIgnoreCase)))
+			{
+				AvailableFirstPorts.Add(port);
+			}
+			AvailableSecondPorts.Clear();
+			foreach(string port in portSnapshot.Where(port=>
+				!string.Equals(
+					port,
+					selectedFirstPort,
+					StringComparison.OrdinalIgnoreCase)))
+			{
+				AvailableSecondPorts.Add(port);
+			}
+		}
+		finally
+		{
+			updatingPorts=false;
+		}
+		OnPropertyChanged(nameof(SelectedFirstPort));
+		OnPropertyChanged(nameof(SelectedSecondPort));
+		OnPropertyChanged(nameof(FirstPortName));
+		OnPropertyChanged(nameof(SecondPortName));
+		ConnectCommand?.RaiseCanExecuteChanged();
+	}
 }

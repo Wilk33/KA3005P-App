@@ -11,6 +11,36 @@ namespace Ka3005P.Tests.ViewModels;
 
 public sealed class DualSupplyViewModelTests
 {
+	[Fact]
+	public void AvailablePorts_SelectTwoDistinctPortsAndFilterOppositeChoice()
+	{
+		DualSupplyViewModel viewModel=new(
+			new PortLeaseRegistry(),
+			new FakeSessionFactory(),
+			["COM5","COM6","COM7"],
+			"COM5",
+			"COM6");
+
+		Assert.Equal("COM5",viewModel.SelectedFirstPort);
+		Assert.Equal("COM6",viewModel.SelectedSecondPort);
+		Assert.DoesNotContain("COM5",viewModel.AvailableSecondPorts);
+		Assert.DoesNotContain("COM6",viewModel.AvailableFirstPorts);
+		Assert.True(viewModel.ConnectCommand.CanExecute(null));
+	}
+
+	[Fact]
+	public void OneAvailablePort_DisablesDualConnect()
+	{
+		DualSupplyViewModel viewModel=new(
+			new PortLeaseRegistry(),
+			new FakeSessionFactory(),
+			["COM5"]);
+
+		Assert.Equal("COM5",viewModel.SelectedFirstPort);
+		Assert.Null(viewModel.SelectedSecondPort);
+		Assert.False(viewModel.ConnectCommand.CanExecute(null));
+	}
+
 	[Theory]
 	[InlineData(DualMode.Series,"62,00","5,100")]
 	[InlineData(DualMode.Parallel,"31,00","10,200")]
@@ -47,20 +77,22 @@ public sealed class DualSupplyViewModelTests
 	}
 
 	[Fact]
-	public async Task Connect_RejectsIdenticalPortNames()
+	public void PortLists_PreventIdenticalSelections()
 	{
 		DualSupplyViewModel viewModel=new(
 			new PortLeaseRegistry(),
-			new FakeSessionFactory())
+			new FakeSessionFactory(),
+			["COM5","COM6"])
 		{
 			FirstPortName="COM5",
 			SecondPortName=" com5 "
 		};
 
-		await viewModel.ConnectCommand.ExecuteAsync(null);
-
 		Assert.False(viewModel.IsConnected);
-		Assert.Contains("różne",viewModel.ErrorMessage,StringComparison.OrdinalIgnoreCase);
+		Assert.False(string.Equals(
+			viewModel.SelectedFirstPort,
+			viewModel.SelectedSecondPort,
+			StringComparison.OrdinalIgnoreCase));
 	}
 
 	[Fact]
@@ -68,11 +100,12 @@ public sealed class DualSupplyViewModelTests
 	{
 		PortLeaseRegistry leases=new();
 		FakeSessionFactory factory=new(){FailPort="COM8"};
-		DualSupplyViewModel viewModel=new(leases,factory)
-		{
-			FirstPortName="COM7",
-			SecondPortName="COM8"
-		};
+		DualSupplyViewModel viewModel=new(
+			leases,
+			factory,
+			["COM7","COM8"],
+			"COM7",
+			"COM8");
 
 		await viewModel.ConnectCommand.ExecuteAsync(null);
 
@@ -112,6 +145,37 @@ public sealed class DualSupplyViewModelTests
 		Assert.Equal([true,false],first.Outputs);
 		Assert.Equal([true,false],second.Outputs);
 		Assert.False(viewModel.IsOutputOn);
+	}
+
+	[Fact]
+	public async Task ChangeMode_WhileOn_SendsOffAndLeavesOutputOff()
+	{
+		(DualSupplyViewModel viewModel,FakePowerSupplySession first,FakePowerSupplySession second)=
+			CreateViewModel();
+		await viewModel.ToggleOutputCommand.ExecuteAsync(null);
+
+		await viewModel.ChangeModeCommand.ExecuteAsync(DualMode.Parallel);
+
+		Assert.Equal(DualMode.Parallel,viewModel.Mode);
+		Assert.False(first.Outputs[^1]);
+		Assert.False(second.Outputs[^1]);
+		Assert.False(viewModel.IsOutputOn);
+		Assert.Equal(1200,first.RequestedVoltage?.Hundredths);
+		Assert.Equal(1200,second.RequestedVoltage?.Hundredths);
+	}
+
+	[Fact]
+	public async Task ChangeMode_OffFailure_KeepsPreviousMode()
+	{
+		(DualSupplyViewModel viewModel,FakePowerSupplySession first,_)=
+			CreateViewModel();
+		await viewModel.ToggleOutputCommand.ExecuteAsync(null);
+		first.OutputFailure=new IOException("COM5");
+
+		await viewModel.ChangeModeCommand.ExecuteAsync(DualMode.Parallel);
+
+		Assert.Equal(DualMode.Series,viewModel.Mode);
+		Assert.Contains("COM5",viewModel.ErrorMessage);
 	}
 
 	[Fact]

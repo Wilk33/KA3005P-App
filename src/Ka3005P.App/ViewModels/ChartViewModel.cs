@@ -16,6 +16,7 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 	private readonly IMeasurementExporter? exporter;
 	private readonly IFileDialogService? fileDialog;
 	private bool isOutputOn;
+	private bool isConnected;
 	private double minimumY;
 	private double maximumY=1;
 	private string? errorMessage;
@@ -38,14 +39,16 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 		this.exporter=exporter;
 		this.fileDialog=fileDialog;
 		isOutputOn=outputController.IsOutputOn;
+		isConnected=outputController.IsConnected;
 		outputController.OutputStateChanged+=OnOutputStateChanged;
+		outputController.ConnectionStateChanged+=OnConnectionStateChanged;
 		if(sampleSource is not null)
 		{
 			sampleSource.ChartSampleReceived+=OnChartSampleReceived;
 		}
 		ToggleOutputCommand=new AsyncRelayCommand(
 			ToggleOutputAsync,
-			_=>true,
+			_=>IsConnected,
 			exception=>ErrorMessage=exception.Message);
 		SaveVoltageCommand=new AsyncRelayCommand(
 			_=>SaveAsync(MeasurementExportKind.Voltage),
@@ -76,6 +79,21 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 		}
 	}
 
+	public bool IsConnected
+	{
+		get => isConnected;
+		private set
+		{
+			if(SetProperty(ref isConnected,value))
+			{
+				OnPropertyChanged(nameof(IsOffline));
+				OnPropertyChanged(nameof(IsOff));
+				OnPropertyChanged(nameof(IsOn));
+				ToggleOutputCommand.RaiseCanExecuteChanged();
+			}
+		}
+	}
+
 	public double MinimumY
 	{
 		get => minimumY;
@@ -89,8 +107,9 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 	}
 
 	public string OutputButtonText => IsOutputOn ? "ON" : "OFF";
-	public bool IsOff => !IsOutputOn;
-	public bool IsOn => IsOutputOn;
+	public bool IsOff => IsConnected && !IsOutputOn;
+	public bool IsOn => IsConnected && IsOutputOn;
+	public bool IsOffline => !IsConnected;
 
 	public string? ErrorMessage
 	{
@@ -116,6 +135,7 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 		}
 		disposed=true;
 		outputController.OutputStateChanged-=OnOutputStateChanged;
+		outputController.ConnectionStateChanged-=OnConnectionStateChanged;
 		if(sampleSource is not null)
 		{
 			sampleSource.ChartSampleReceived-=OnChartSampleReceived;
@@ -166,6 +186,11 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 	private void OnOutputStateChanged(object? sender,bool enabled)
 	{
 		IsOutputOn=enabled;
+	}
+
+	private void OnConnectionStateChanged(object? sender,bool connected)
+	{
+		IsConnected=connected;
 	}
 
 	private void OnChartSampleReceived(object? sender,ChartSample sample)
