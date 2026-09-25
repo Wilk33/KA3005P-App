@@ -78,6 +78,24 @@ public sealed class DualSupplyViewModelTests
 	}
 
 	[Fact]
+	public async Task OnlineButton_DisconnectsBothSupplies()
+	{
+		FakeSessionFactory factory=new();
+		DualSupplyViewModel viewModel=new(
+			new PortLeaseRegistry(),
+			factory,
+			["COM5","COM6"]);
+		await viewModel.ConnectCommand.ExecuteAsync(null);
+		FakePowerSupplySession[] sessions=factory.Sessions.ToArray();
+
+		await viewModel.ConnectCommand.ExecuteAsync(null);
+
+		Assert.False(viewModel.IsConnected);
+		Assert.All(sessions,session=>Assert.Contains(false,session.Outputs));
+		Assert.All(sessions,session=>Assert.True(session.DisposeRequested));
+	}
+
+	[Fact]
 	public void PortLists_PreventIdenticalSelections()
 	{
 		DualSupplyViewModel viewModel=new(
@@ -233,6 +251,7 @@ public sealed class DualSupplyViewModelTests
 	private sealed class FakeSessionFactory : ISingleSessionFactory
 	{
 		public string? FailPort { get; init; }
+		public List<FakePowerSupplySession> Sessions { get; }=[];
 
 		public ValueTask<IPowerSupplySession> CreateAsync(
 			string portName,
@@ -242,8 +261,9 @@ public sealed class DualSupplyViewModelTests
 			{
 				throw new IOException(portName);
 			}
-			return ValueTask.FromResult<IPowerSupplySession>(
-				new FakePowerSupplySession());
+			FakePowerSupplySession session=new();
+			Sessions.Add(session);
+			return ValueTask.FromResult<IPowerSupplySession>(session);
 		}
 	}
 }

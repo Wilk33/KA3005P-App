@@ -22,7 +22,7 @@
 		<Setter Property="FontFamily" Value="Segoe UI" />
 	</Style>
 
-	<Style TargetType="Button">
+	<Style x:Key="KoradButtonBaseStyle" TargetType="ButtonBase">
 		<Setter Property="Margin" Value="6" />
 		<Setter Property="Padding" Value="10" />
 		<Setter Property="MinHeight" Value="36" />
@@ -30,6 +30,41 @@
 		<Setter Property="Foreground" Value="{StaticResource KoradTextBrush}" />
 		<Setter Property="BorderBrush" Value="#B0B0B0" />
 		<Setter Property="BorderThickness" Value="1" />
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ButtonBase">
+					<Border
+						x:Name="ButtonBorder"
+						Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}">
+						<ContentPresenter
+							Margin="{TemplateBinding Padding}"
+							HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+							VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="ButtonBorder" Property="Background" Value="#969696" />
+						</Trigger>
+						<Trigger Property="IsPressed" Value="True">
+							<Setter TargetName="ButtonBorder" Property="Background" Value="#565656" />
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Opacity" Value="0.55" />
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<Style TargetType="Button" BasedOn="{StaticResource KoradButtonBaseStyle}" />
+
+	<Style TargetType="RepeatButton" BasedOn="{StaticResource KoradButtonBaseStyle}">
+		<Setter Property="Margin" Value="0" />
+		<Setter Property="Padding" Value="0" />
+		<Setter Property="MinHeight" Value="0" />
 	</Style>
 
 	<Style TargetType="TextBox">
@@ -38,6 +73,77 @@
 		<Setter Property="CaretBrush" Value="{StaticResource KoradTextBrush}" />
 		<Setter Property="FontFamily" Value="Consolas" />
 		<Setter Property="FontSize" Value="20" />
+	</Style>
+
+	<Style TargetType="ComboBox">
+		<Setter Property="OverridesDefaultStyle" Value="True" />
+		<Setter Property="Background" Value="{StaticResource KoradInputBrush}" />
+		<Setter Property="Foreground" Value="{StaticResource KoradTextBrush}" />
+		<Setter Property="BorderBrush" Value="#B0B0B0" />
+		<Setter Property="BorderThickness" Value="1" />
+		<Setter Property="Padding" Value="4,2" />
+		<Setter Property="MinHeight" Value="28" />
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ComboBox">
+					<Grid>
+						<ToggleButton
+							Focusable="False"
+							IsChecked="{Binding IsDropDownOpen,Mode=TwoWay,RelativeSource={RelativeSource TemplatedParent}}">
+							<Border
+								Background="{TemplateBinding Background}"
+								BorderBrush="{TemplateBinding BorderBrush}"
+								BorderThickness="{TemplateBinding BorderThickness}">
+								<Grid>
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="*" />
+										<ColumnDefinition Width="22" />
+									</Grid.ColumnDefinitions>
+									<ContentPresenter
+										Margin="{TemplateBinding Padding}"
+										VerticalAlignment="Center"
+										Content="{TemplateBinding SelectionBoxItem}"
+										ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" />
+									<TextBlock Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Text="▼" />
+								</Grid>
+							</Border>
+						</ToggleButton>
+						<Popup
+							Width="{TemplateBinding ActualWidth}"
+							AllowsTransparency="True"
+							IsOpen="{TemplateBinding IsDropDownOpen}"
+							Placement="Bottom"
+							PopupAnimation="Fade">
+							<Border Background="{StaticResource KoradInputBrush}" BorderBrush="#B0B0B0" BorderThickness="1">
+								<ScrollViewer MaxHeight="260" VerticalScrollBarVisibility="Auto">
+									<StackPanel IsItemsHost="True" />
+								</ScrollViewer>
+							</Border>
+						</Popup>
+					</Grid>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Opacity" Value="0.55" />
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<Style TargetType="ComboBoxItem">
+		<Setter Property="HorizontalContentAlignment" Value="Stretch" />
+		<Setter Property="Background" Value="{StaticResource KoradInputBrush}" />
+		<Setter Property="Foreground" Value="{StaticResource KoradTextBrush}" />
+		<Setter Property="Padding" Value="4,3" />
+		<Style.Triggers>
+			<Trigger Property="IsMouseOver" Value="True">
+				<Setter Property="Background" Value="#A0A0A0" />
+			</Trigger>
+			<Trigger Property="IsSelected" Value="True">
+				<Setter Property="Background" Value="#5B7694" />
+			</Trigger>
+		</Style.Triggers>
 	</Style>
 
 	<Style x:Key="ValueTextStyle" TargetType="TextBlock">

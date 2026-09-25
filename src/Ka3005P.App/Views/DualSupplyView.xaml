@@ -26,12 +26,12 @@
 			</Grid.ColumnDefinitions>
 			<StackPanel Grid.Column="0" Margin="0,0,8,0">
 				<TextBlock Text="Port COM 1" />
-				<ComboBox IsEditable="False" IsEnabled="{Binding CanSelectPort}"
+				<ComboBox Height="28" IsEditable="False" IsEnabled="{Binding CanSelectPort}"
 					ItemsSource="{Binding AvailableFirstPorts}" SelectedItem="{Binding SelectedFirstPort,Mode=TwoWay}" />
 			</StackPanel>
 			<StackPanel Grid.Column="1" Margin="8,0">
 				<TextBlock Text="Port COM 2" />
-				<ComboBox IsEditable="False" IsEnabled="{Binding CanSelectPort}"
+				<ComboBox Height="28" IsEditable="False" IsEnabled="{Binding CanSelectPort}"
 					ItemsSource="{Binding AvailableSecondPorts}" SelectedItem="{Binding SelectedSecondPort,Mode=TwoWay}" />
 			</StackPanel>
 			<Button Grid.Column="2" VerticalAlignment="Bottom"

@@ -4,20 +4,19 @@ Natywna aplikacja Windows do obsługi zasilaczy Korad KA3005P, zachowująca funk
 
 ## Stan projektu
 
-Pierwsza wersja obejmuje pojedynczy zasilacz, dwa niezależne okna oraz Dual Korad w trybie szeregowym, równoległym i symetrycznym. Ma wykres prądu, eksport CSV, obliczanie rezystancji, blokadę współdzielenia portów i tryb demonstracyjny bez sprzętu.
+Pierwsza wersja obejmuje pojedynczy zasilacz oraz Dual Korad w trybie szeregowym, równoległym i symetrycznym. Tryb wybiera się w jednym, kompaktowym oknie głównym. Aplikacja ma wykres prądu, eksport CSV, obliczanie rezystancji, blokadę współdzielenia portów i tryb demonstracyjny bez sprzętu.
 
 Projekt używa C#, WPF i .NET 10. Projekt techniczny, w tym rozwiązanie problemu lagów podczas zmiany nastaw, znajduje się w [specyfikacji](docs/superpowers/specs/2026-09-24-ka3005p-app-design.md).
 
 ## Wymagania
 
 - Windows 10 lub Windows 11 w wersji x64.
-- .NET Desktop Runtime 10 dla pakietu framework-dependent.
 - Jeden port COM dla pojedynczego zasilacza albo dwa różne porty COM dla Dual.
 - Parametry transmisji są ustawiane przez aplikację: 9600 bit/s, 8 bitów danych, brak parzystości, 1 bit stopu, DTR wyłączone.
 
 ## Uruchomienie
 
-Gotowy pakiet znajduje się w `artifacts/publish/win-x64`. Uruchom `Ka3005P.App.exe`, wybierz typ okna, wpisz port COM i wybierz `Offline`, aby nawiązać połączenie. Po połączeniu przycisk zmieni opis na `Online`.
+Gotowy pakiet znajduje się w `artifacts/publish/win-x64-single`. Jest samodzielny i nie wymaga instalowania środowiska .NET. Uruchom `Ka3005P.App.exe`, wybierz aktywny port z listy i kliknij `Offline`, aby nawiązać połączenie. Po połączeniu przycisk zmieni opis na `Online`; ponowne kliknięcie rozłączy urządzenie i wcześniej wymusi `OFF`.
 
 Tryb demonstracyjny nie otwiera portów COM:
 
@@ -25,7 +24,7 @@ Tryb demonstracyjny nie otwiera portów COM:
 Ka3005P.App.exe --demo
 ```
 
-W demo można otworzyć okno pojedyncze lub Dual, połączyć fikcyjne porty, zmieniać nastawy, używać ON/OFF, obserwować pomiary, wykres i eksport CSV. Pomiar przy OFF wynosi 0 V i 0 A, nawet jeśli nastawa pozostaje zapisana.
+W demo można przełączać tryb pojedynczy i Dual, połączyć fikcyjne porty, zmieniać nastawy, używać ON/OFF, obserwować pomiary, wykres i eksport CSV. Pomiar przy OFF wynosi 0 V i 0 A, nawet jeśli nastawa pozostaje zapisana.
 
 ## Budowanie i testy
 
@@ -40,7 +39,13 @@ dotnet test Ka3005P.sln -c Release
 Publikacja pakietu x64:
 
 ```powershell
-dotnet publish src/Ka3005P.App/Ka3005P.App.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o artifacts/publish/win-x64
+dotnet publish src/Ka3005P.App/Ka3005P.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o artifacts/publish/win-x64-single
+```
+
+Test dwóch fizycznych zasilaczy, kończący pracę poleceniem `OUT0`:
+
+```powershell
+dotnet run --project tools/Ka3005P.HardwareSmoke/Ka3005P.HardwareSmoke.csproj -c Release -- COM3 COM4
 ```
 
 ## Sterowanie i pomiary
@@ -65,11 +70,11 @@ Menu `Zapisz jako` zapisuje napięcie albo prąd do pliku CSV z czasem od począ
 
 ## Zakres referencyjny
 
-- Pojedynczy zasilacz i dwie niezależne sesje.
+- Pojedynczy zasilacz i tryb Dual przełączane w jednym oknie głównym.
 - Dual Korad: tryb szeregowy, równoległy i symetryczny.
 - Porty COM, nastawy napięcia i prądu, ON/OFF, pomiary i sygnalizacja stanu.
 - Osobne okno wykresu prądu, obliczanie rezystancji, eksport CSV.
-- Menedżer sesji i wybór folderu zapisu.
+- Automatycznie odświeżane listy aktywnych portów COM z blokadą powtórnego wyboru portu w Dual.
 - Kompaktowe szare okna, jasne cyfry Consolas i oryginalne ikony.
 
 ## Zasoby

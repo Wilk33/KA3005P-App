@@ -45,6 +45,20 @@ public partial class SetpointEditor : UserControl
 		InitializeComponent();
 	}
 
+	private void TextBoxPreviewKeyDown(object sender,KeyEventArgs eventArgs)
+	{
+		if(eventArgs.Key != Key.Enter)
+		{
+			return;
+		}
+		if(CommitCommand?.CanExecute(null) == true)
+		{
+			CommitCommand.Execute(null);
+		}
+		eventArgs.Handled=true;
+		Root.Focus();
+	}
+
 	public string Label
 	{
 		get => (string)GetValue(LabelProperty);

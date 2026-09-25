@@ -172,6 +172,65 @@ public sealed class SingleSupplyViewModelTests
 	}
 
 	[Fact]
+	public async Task OnlineButton_DisconnectsAndAllowsReconnect()
+	{
+		FakeSingleSessionFactory factory=new();
+		SingleSupplyViewModel viewModel=new(
+			new PortLeaseRegistry(),
+			factory,
+			["COM5"]);
+		await viewModel.ConnectCommand.ExecuteAsync(null);
+		FakePowerSupplySession first=Assert.IsType<FakePowerSupplySession>(
+			factory.LastSession);
+
+		await viewModel.ConnectCommand.ExecuteAsync(null);
+
+		Assert.False(viewModel.IsConnected);
+		Assert.Contains(false,first.Outputs);
+		Assert.True(first.StopRequested);
+		Assert.True(viewModel.ConnectCommand.CanExecute(null));
+		await viewModel.ConnectCommand.ExecuteAsync(null);
+		Assert.True(viewModel.IsConnected);
+		await viewModel.CloseAsync(CancellationToken.None);
+	}
+
+	[Fact]
+	public async Task MainAndChartOutputCommands_AreSerialized()
+	{
+		FakePowerSupplySession session=new();
+		SingleSupplyViewModel main=new(session);
+		using ChartViewModel chart=main.CreateChartViewModel(
+			new FakeFileDialogService());
+		session.BlockNextOutput();
+
+		Task mainOperation=main.ToggleOutputCommand.ExecuteAsync(null);
+		await session.WaitUntilOutputStartsAsync();
+		Task chartOperation=chart.ToggleOutputCommand.ExecuteAsync(null);
+		await Task.Delay(50);
+
+		Assert.False(chartOperation.IsCompleted);
+		session.ReleaseOutput();
+		await Task.WhenAll(mainOperation,chartOperation)
+			.WaitAsync(TimeSpan.FromSeconds(2));
+	}
+
+	[Fact]
+	public async Task Connect_NotifiesOffLampState()
+	{
+		SingleSupplyViewModel viewModel=new(
+			new PortLeaseRegistry(),
+			new FakeSingleSessionFactory());
+		List<string?> changed=[];
+		viewModel.PropertyChanged+=(_,args)=>changed.Add(args.PropertyName);
+
+		await viewModel.ConnectCommand.ExecuteAsync(null);
+
+		Assert.True(viewModel.IsOff);
+		Assert.Contains(nameof(viewModel.IsOff),changed);
+		await viewModel.CloseAsync(CancellationToken.None);
+	}
+
+	[Fact]
 	public async Task Connect_RejectsPortAlreadyLeasedByAnotherWindow()
 	{
 		PortLeaseRegistry leases=new();
@@ -222,6 +281,27 @@ public sealed class SingleSupplyViewModelTests
 		Assert.True(session.StopRequested);
 		Assert.True(session.DisposeRequested);
 		Assert.Contains("utrata COM5",viewModel.ErrorMessage);
+	}
+
+	[Fact]
+	public async Task CommunicationFailure_AllowsReconnect()
+	{
+		FakeSingleSessionFactory factory=new();
+		SingleSupplyViewModel viewModel=new(
+			new PortLeaseRegistry(),
+			factory,
+			["COM5"]);
+		await viewModel.ConnectCommand.ExecuteAsync(null);
+		FakePowerSupplySession first=Assert.IsType<FakePowerSupplySession>(
+			factory.LastSession);
+
+		first.PublishError(new DeviceCommunicationException("utrata COM5"));
+		await WaitUntilAsync(()=>!viewModel.IsConnected);
+		await viewModel.ConnectCommand.ExecuteAsync(null);
+
+		Assert.True(viewModel.IsConnected);
+		Assert.NotSame(first,factory.LastSession);
+		await viewModel.CloseAsync(CancellationToken.None);
 	}
 
 	private static async Task WaitUntilAsync(Func<bool> condition)

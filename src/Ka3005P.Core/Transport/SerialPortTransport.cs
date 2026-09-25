@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Ports;
 
 namespace Ka3005P.Core.Transport;
@@ -6,7 +7,10 @@ public sealed class SerialPortTransport : ISerialTransport
 {
 	private readonly TimeSpan readTimeout;
 	private readonly TimeSpan writeTimeout;
+	private readonly SemaphoreSlim writeGate=new(1,1);
+	private static readonly TimeSpan MinimumCommandInterval=TimeSpan.FromMilliseconds(45);
 	private SerialPort? port;
+	private long? lastWriteCompletedAt;
 
 	public SerialPortTransport()
 		: this(TimeSpan.FromMilliseconds(250),TimeSpan.FromMilliseconds(250))
@@ -62,19 +66,59 @@ public sealed class SerialPortTransport : ISerialTransport
 		CancellationToken cancellationToken)
 	{
 		SerialPort opened=GetOpenPort();
-		await opened.BaseStream.WriteAsync(buffer,cancellationToken).ConfigureAwait(false);
-		await opened.BaseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+		byte[] bytes=buffer.ToArray();
+		await writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+		try
+		{
+			if(lastWriteCompletedAt is long timestamp)
+			{
+				TimeSpan remaining=MinimumCommandInterval-
+					Stopwatch.GetElapsedTime(timestamp);
+				if(remaining > TimeSpan.Zero)
+				{
+					await Task.Delay(remaining,cancellationToken).ConfigureAwait(false);
+				}
+			}
+			await Task.Run(
+				()=>opened.Write(bytes,0,bytes.Length),
+				cancellationToken).ConfigureAwait(false);
+			lastWriteCompletedAt=Stopwatch.GetTimestamp();
+		}
+		catch(TimeoutException exception)
+		{
+			throw new IOException("Przekroczono limit czasu zapisu portu szeregowego.",exception);
+		}
+		finally
+		{
+			writeGate.Release();
+		}
 	}
 
-	public ValueTask<int> ReadAsync(Memory<byte> buffer,CancellationToken cancellationToken)
+	public async ValueTask<int> ReadAsync(
+		Memory<byte> buffer,
+		CancellationToken cancellationToken)
 	{
-		return GetOpenPort().BaseStream.ReadAsync(buffer,cancellationToken);
+		SerialPort opened=GetOpenPort();
+		byte[] bytes=new byte[buffer.Length];
+		try
+		{
+			int read=await Task.Run(
+				()=>opened.Read(bytes,0,bytes.Length),
+				cancellationToken).ConfigureAwait(false);
+			bytes.AsMemory(0,read).CopyTo(buffer);
+			return read;
+		}
+		catch(TimeoutException exception)
+		{
+			throw new IOException("Przekroczono limit czasu odczytu portu szeregowego.",exception);
+		}
 	}
 
 	public ValueTask CloseAsync()
 	{
 		SerialPort? opened=port;
 		port=null;
+		lastWriteCompletedAt=null;
 		if(opened is not null)
 		{
 			opened.Close();
@@ -87,6 +131,7 @@ public sealed class SerialPortTransport : ISerialTransport
 	public async ValueTask DisposeAsync()
 	{
 		await CloseAsync().ConfigureAwait(false);
+		writeGate.Dispose();
 	}
 
 	private SerialPort GetOpenPort()

@@ -22,9 +22,11 @@
 				<ColumnDefinition Width="Auto" />
 			</Grid.ColumnDefinitions>
 			<StackPanel Orientation="Horizontal">
-				<TextBlock Margin="0,8,6,0" FontSize="17" FontWeight="Bold" Text="Port COM:" />
+				<TextBlock Margin="0,3,6,0" VerticalAlignment="Center" FontSize="17" FontWeight="Bold" Text="Port:" />
 				<ComboBox
 					Width="88"
+					Height="28"
+					VerticalAlignment="Center"
 					IsEditable="False"
 					IsEnabled="{Binding CanSelectPort}"
 					ItemsSource="{Binding AvailablePorts}"

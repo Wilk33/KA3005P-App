@@ -22,7 +22,7 @@ public sealed class MainWindowViewModelTests
 		Assert.True(viewModel.IsSingleSelected);
 		Assert.False(viewModel.IsDualSelected);
 		Assert.Equal(300,viewModel.WindowWidth);
-		Assert.Equal(455,viewModel.WindowHeight);
+		Assert.Equal(390,viewModel.WindowHeight);
 	}
 
 	[Fact]

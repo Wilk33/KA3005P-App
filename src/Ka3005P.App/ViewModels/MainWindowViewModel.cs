@@ -62,7 +62,7 @@ public sealed class MainWindowViewModel : ObservableObject,IAsyncDisposable
 	public bool IsSingleSelected => SelectedMode == ApplicationMode.Single;
 	public bool IsDualSelected => SelectedMode == ApplicationMode.Dual;
 	public double WindowWidth => IsSingleSelected ? 300 : 480;
-	public double WindowHeight => IsSingleSelected ? 455 : 590;
+	public double WindowHeight => IsSingleSelected ? 390 : 590;
 	public AsyncRelayCommand SelectSingleCommand { get; }
 	public AsyncRelayCommand SelectDualCommand { get; }
 

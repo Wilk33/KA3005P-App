@@ -21,6 +21,7 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 	private readonly ISingleSessionFactory? sessionFactory;
 	private readonly SynchronizationContext? uiContext=SynchronizationContext.Current;
 	private readonly object measurementGate=new();
+	private readonly SemaphoreSlim operationGate=new(1,1);
 	private readonly List<DualMeasurement> measurements=[];
 	private DualPowerSupplyController? controller;
 	private PortLease? firstLease;
@@ -75,8 +76,8 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 		UpdateAvailablePorts(availablePorts ?? ["COM5","COM6"]);
 		RestorePreferredPorts(preferredFirstPort,preferredSecondPort);
 		ConnectCommand=new AsyncRelayCommand(
-			ConnectAsync,
-			_=>CanConnect(),
+			ToggleConnectionAsync,
+			_=>IsConnected || CanConnect(),
 			exception=>ErrorMessage=exception.Message);
 		InitializeCommands();
 		UpdatePhysicalSetpointTexts();
@@ -200,6 +201,8 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 			{
 				OnPropertyChanged(nameof(ConnectionStatus));
 				OnPropertyChanged(nameof(IsOffline));
+				OnPropertyChanged(nameof(IsOff));
+				OnPropertyChanged(nameof(IsOn));
 				OnPropertyChanged(nameof(CanSelectPort));
 				ConnectCommand?.RaiseCanExecuteChanged();
 				ToggleOutputCommand?.RaiseCanExecuteChanged();
@@ -267,20 +270,28 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 		bool enabled,
 		CancellationToken cancellationToken)
 	{
-		DualPowerSupplyController current=controller ??
-			throw new InvalidOperationException("Brak połączenia Dual.");
-		DualOperationResult result=await current.SetOutputAsync(
-			enabled,
-			cancellationToken);
-		if(result.IsSuccess)
+		await operationGate.WaitAsync(cancellationToken);
+		try
 		{
-			IsOutputOn=result.RequestedEnabled;
-			ErrorMessage=null;
+			DualPowerSupplyController current=controller ??
+				throw new InvalidOperationException("Brak połączenia Dual.");
+			DualOperationResult result=await current.SetOutputAsync(
+				enabled,
+				cancellationToken);
+			if(result.IsSuccess)
+			{
+				IsOutputOn=result.RequestedEnabled;
+				ErrorMessage=null;
+			}
+			else
+			{
+				IsOutputOn=false;
+				ErrorMessage=BuildOperationError(result);
+			}
 		}
-		else
+		finally
 		{
-			IsOutputOn=false;
-			ErrorMessage=BuildOperationError(result);
+			operationGate.Release();
 		}
 	}
 
@@ -357,11 +368,19 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 
 	public async ValueTask CloseAsync(CancellationToken cancellationToken)
 	{
+		await DisconnectAsync(true,cancellationToken);
+	}
+
+	private async ValueTask DisconnectAsync(
+		bool finalClose,
+		CancellationToken cancellationToken)
+	{
 		if(closing)
 		{
 			return;
 		}
 		closing=true;
+		await operationGate.WaitAsync(cancellationToken);
 		try
 		{
 			if(controller is not null)
@@ -390,6 +409,12 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 			secondLease=null;
 			IsConnected=false;
 			IsOutputOn=false;
+			operationGate.Release();
+			if(!finalClose)
+			{
+				closing=false;
+				Interlocked.Exchange(ref faultCleanupScheduled,0);
+			}
 		}
 	}
 
@@ -489,6 +514,16 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 		UpdatePhysicalSetpointTexts();
 	}
 
+	private async Task ToggleConnectionAsync(object? parameter)
+	{
+		if(IsConnected)
+		{
+			await DisconnectAsync(false,CancellationToken.None);
+			return;
+		}
+		await ConnectAsync(parameter);
+	}
+
 	private static async Task<SessionCreationResult> CreateSessionAsync(
 		string port,
 		ISingleSessionFactory factory)
@@ -517,20 +552,28 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 		{
 			return;
 		}
-		if(controller is not null)
+		await operationGate.WaitAsync();
+		try
 		{
-			DualOperationResult off=await controller.SetOutputAsync(
-				false,
-				CancellationToken.None);
-			if(!off.IsSuccess)
+			if(controller is not null)
 			{
-				ErrorMessage=BuildOperationError(off);
-				OnPropertyChanged(nameof(Mode));
-				return;
+				DualOperationResult off=await controller.SetOutputAsync(
+					false,
+					CancellationToken.None);
+				if(!off.IsSuccess)
+				{
+					ErrorMessage=BuildOperationError(off);
+					OnPropertyChanged(nameof(Mode));
+					return;
+				}
+				IsOutputOn=false;
 			}
-			IsOutputOn=false;
+			Mode=target;
 		}
-		Mode=target;
+		finally
+		{
+			operationGate.Release();
+		}
 	}
 
 	private static string BuildOperationError(DualOperationResult result)
@@ -680,6 +723,10 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 			ScheduleFaultCleanup(communicationError.Message);
 			return;
 		}
+		if(Volatile.Read(ref faultCleanupScheduled) != 0)
+		{
+			return;
+		}
 		Dispatch(()=>
 		{
 			if(snapshot.LastOutputOperation is { IsSuccess: false } operation)
@@ -695,10 +742,10 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 		{
 			return;
 		}
+		Dispatch(()=>ErrorMessage=message);
 		_=Task.Run(async ()=>
 		{
-			await CloseAsync(CancellationToken.None);
-			Dispatch(()=>ErrorMessage=message);
+			await DisconnectAsync(false,CancellationToken.None);
 		});
 	}
 

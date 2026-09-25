@@ -23,6 +23,8 @@ public sealed class DualPowerSupplyController : IAsyncDisposable
 	private CurrentSetpoint requestedCurrent=CurrentSetpoint.FromThousandths(0);
 	private MeasurementSample? firstMeasurement;
 	private MeasurementSample? secondMeasurement;
+	private bool firstMeasurementUpdated;
+	private bool secondMeasurementUpdated;
 	private DualControllerSnapshot snapshot;
 	private bool disposed;
 
@@ -205,6 +207,7 @@ public sealed class DualPowerSupplyController : IAsyncDisposable
 		lock(gate)
 		{
 			firstMeasurement=sample;
+			firstMeasurementUpdated=true;
 		}
 		PublishCombinedMeasurement();
 	}
@@ -214,6 +217,7 @@ public sealed class DualPowerSupplyController : IAsyncDisposable
 		lock(gate)
 		{
 			secondMeasurement=sample;
+			secondMeasurementUpdated=true;
 		}
 		PublishCombinedMeasurement();
 	}
@@ -223,13 +227,17 @@ public sealed class DualPowerSupplyController : IAsyncDisposable
 		DualMeasurement measurement;
 		lock(gate)
 		{
-			if(firstMeasurement is not MeasurementSample firstSample ||
+			if(!firstMeasurementUpdated ||
+				!secondMeasurementUpdated ||
+				firstMeasurement is not MeasurementSample firstSample ||
 				secondMeasurement is not MeasurementSample secondSample)
 			{
 				return;
 			}
 
 			measurement=DualMeasurement.Aggregate(Mode,firstSample,secondSample);
+			firstMeasurementUpdated=false;
+			secondMeasurementUpdated=false;
 			snapshot=snapshot with { LastMeasurement=measurement };
 		}
 

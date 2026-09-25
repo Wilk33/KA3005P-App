@@ -1,4 +1,5 @@
 using Ka3005P.Core.Dual;
+using Ka3005P.Core.Measurements;
 using Ka3005P.Core.Protocol;
 using Ka3005P.Tests.Fakes;
 
@@ -58,5 +59,27 @@ public sealed class DualPowerSupplyControllerTests
 		Assert.True(second.OutputRequested);
 		first.ReleaseOutput();
 		Assert.True((await operation).IsSuccess);
+	}
+
+	[Fact]
+	public void Measurements_RequireFreshSampleFromBothSessions()
+	{
+		FakePowerSupplySession first=new();
+		FakePowerSupplySession second=new();
+		DualPowerSupplyController controller=new(first,second,DualMode.Parallel);
+		List<DualMeasurement> received=[];
+		controller.MeasurementReceived+=(_,measurement)=>received.Add(measurement);
+
+		first.PublishMeasurement(new MeasurementSample(TimeSpan.FromSeconds(1),0,100));
+		second.PublishMeasurement(new MeasurementSample(TimeSpan.FromSeconds(1),0,100));
+		first.PublishMeasurement(new MeasurementSample(TimeSpan.FromSeconds(2),0,150));
+		first.PublishMeasurement(new MeasurementSample(TimeSpan.FromSeconds(3),0,200));
+
+		Assert.Single(received);
+		second.PublishMeasurement(new MeasurementSample(TimeSpan.FromSeconds(3),0,200));
+
+		Assert.Equal(2,received.Count);
+		Assert.Equal(400,received[^1].CurrentThousandths);
+		Assert.Equal(TimeSpan.FromSeconds(3),received[^1].First.Elapsed);
 	}
 }

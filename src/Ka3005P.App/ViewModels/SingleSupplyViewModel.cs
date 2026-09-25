@@ -20,6 +20,7 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 	private readonly ISingleSessionFactory? sessionFactory;
 	private readonly SynchronizationContext? uiContext=SynchronizationContext.Current;
 	private readonly object measurementGate=new();
+	private readonly SemaphoreSlim operationGate=new(1,1);
 	private readonly List<MeasurementSample> measurements=[];
 	private IPowerSupplySession? session;
 	private PortLease? portLease;
@@ -69,12 +70,12 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 				string.Equals(port,preferredPort,StringComparison.OrdinalIgnoreCase));
 		}
 		ConnectCommand=new AsyncRelayCommand(
-			ConnectAsync,
-			_=>!IsConnected &&
-				SelectedPort is not null &&
-				AvailablePorts.Contains(
-					SelectedPort,
-					StringComparer.OrdinalIgnoreCase),
+			ToggleConnectionAsync,
+			_=>IsConnected ||
+				(SelectedPort is not null &&
+					AvailablePorts.Contains(
+						SelectedPort,
+						StringComparer.OrdinalIgnoreCase)),
 			exception=>ErrorMessage=exception.Message);
 		InitializeCommands();
 	}
@@ -156,6 +157,8 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 			{
 				OnPropertyChanged(nameof(ConnectionStatus));
 				OnPropertyChanged(nameof(IsOffline));
+				OnPropertyChanged(nameof(IsOff));
+				OnPropertyChanged(nameof(IsOn));
 				OnPropertyChanged(nameof(CanSelectPort));
 				ConnectCommand?.RaiseCanExecuteChanged();
 				ToggleOutputCommand?.RaiseCanExecuteChanged();
@@ -233,13 +236,21 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 		ConnectCommand?.RaiseCanExecuteChanged();
 	}
 
-	public ValueTask SetOutputAsync(
+	public async ValueTask SetOutputAsync(
 		bool enabled,
 		CancellationToken cancellationToken)
 	{
-		IPowerSupplySession current=session ??
-			throw new InvalidOperationException("Brak połączenia z zasilaczem.");
-		return current.SetOutputAsync(enabled,cancellationToken);
+		await operationGate.WaitAsync(cancellationToken);
+		try
+		{
+			IPowerSupplySession current=session ??
+				throw new InvalidOperationException("Brak połączenia z zasilaczem.");
+			await current.SetOutputAsync(enabled,cancellationToken);
+		}
+		finally
+		{
+			operationGate.Release();
+		}
 	}
 
 	public async ValueTask ExportAsync(
@@ -273,11 +284,19 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 
 	public async ValueTask CloseAsync(CancellationToken cancellationToken)
 	{
+		await DisconnectAsync(true,cancellationToken);
+	}
+
+	private async ValueTask DisconnectAsync(
+		bool finalClose,
+		CancellationToken cancellationToken)
+	{
 		if(closing)
 		{
 			return;
 		}
 		closing=true;
+		await operationGate.WaitAsync(cancellationToken);
 		IPowerSupplySession? current=session;
 		try
 		{
@@ -310,6 +329,12 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 			portLease=null;
 			IsConnected=false;
 			IsOutputOn=false;
+			operationGate.Release();
+			if(!finalClose)
+			{
+				closing=false;
+				Interlocked.Exchange(ref faultCleanupScheduled,0);
+			}
 		}
 	}
 
@@ -359,6 +384,16 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 			acquired.Dispose();
 			throw;
 		}
+	}
+
+	private async Task ToggleConnectionAsync(object? parameter)
+	{
+		if(IsConnected)
+		{
+			await DisconnectAsync(false,CancellationToken.None);
+			return;
+		}
+		await ConnectAsync(parameter);
 	}
 
 	private async Task ToggleOutputAsync(object? parameter)
@@ -471,6 +506,10 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 			ScheduleFaultCleanup(exception.Message);
 			return;
 		}
+		if(Volatile.Read(ref faultCleanupScheduled) != 0)
+		{
+			return;
+		}
 		Dispatch(()=>
 		{
 			IsOutputOn=snapshot.OutputState == OutputState.On;
@@ -484,10 +523,10 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 		{
 			return;
 		}
+		Dispatch(()=>ErrorMessage=message);
 		_=Task.Run(async ()=>
 		{
-			await CloseAsync(CancellationToken.None);
-			Dispatch(()=>ErrorMessage=message);
+			await DisconnectAsync(false,CancellationToken.None);
 		});
 	}
 

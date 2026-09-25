@@ -9,6 +9,10 @@
 	Foreground="{StaticResource KoradTextBrush}"
 	Width="{Binding WindowWidth}"
 	Height="{Binding WindowHeight}"
+	MinWidth="{Binding WindowWidth}"
+	MaxWidth="{Binding WindowWidth}"
+	MinHeight="{Binding WindowHeight}"
+	MaxHeight="{Binding WindowHeight}"
 	ResizeMode="NoResize"
 	WindowStartupLocation="CenterScreen">
 	<Window.Resources>
