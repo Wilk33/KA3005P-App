@@ -4,7 +4,13 @@ namespace Ka3005P.App.Demo;
 
 public sealed class DemoSerialPortCatalog : ISerialPortCatalog
 {
-	private static readonly string[] Ports=["COM5","COM6","COM7"];
+	private static readonly string[] Ports=[
+		"COM1",
+		"COM2",
+		"COM3",
+		"COM4",
+		"COM5",
+		"COM6"];
 
 	public IReadOnlyList<string> GetPortNames()
 	{

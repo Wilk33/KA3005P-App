@@ -17,7 +17,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets/KA3005P.ico</ApplicationIcon>
-	<Version>0.1.0</Version>
+	<Version>0.1.1</Version>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

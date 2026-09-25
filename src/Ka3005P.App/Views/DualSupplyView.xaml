@@ -6,9 +6,8 @@
 	xmlns:dual="clr-namespace:Ka3005P.Core.Dual;assembly=Ka3005P.Core"
 	Background="{StaticResource KoradBackgroundBrush}"
 	Foreground="{StaticResource KoradTextBrush}">
-	<Grid Margin="18,12">
+	<Grid Margin="12,8">
 		<Grid.RowDefinitions>
-			<RowDefinition Height="Auto" />
 			<RowDefinition Height="Auto" />
 			<RowDefinition Height="Auto" />
 			<RowDefinition Height="Auto" />
@@ -20,40 +19,81 @@
 		</Grid.RowDefinitions>
 		<Grid>
 			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="54" />
+				<ColumnDefinition Width="82" />
 				<ColumnDefinition Width="*" />
-				<ColumnDefinition Width="*" />
-				<ColumnDefinition Width="Auto" />
+				<ColumnDefinition Width="86" />
 			</Grid.ColumnDefinitions>
-			<StackPanel Grid.Column="0" Margin="0,0,8,0">
-				<TextBlock Text="Port COM 1" />
-				<ComboBox Height="28" IsEditable="False" IsEnabled="{Binding CanSelectPort}"
-					ItemsSource="{Binding AvailableFirstPorts}" SelectedItem="{Binding SelectedFirstPort,Mode=TwoWay}" />
-			</StackPanel>
-			<StackPanel Grid.Column="1" Margin="8,0">
-				<TextBlock Text="Port COM 2" />
-				<ComboBox Height="28" IsEditable="False" IsEnabled="{Binding CanSelectPort}"
-					ItemsSource="{Binding AvailableSecondPorts}" SelectedItem="{Binding SelectedSecondPort,Mode=TwoWay}" />
-			</StackPanel>
-			<Button Grid.Column="2" VerticalAlignment="Bottom"
-				Command="{Binding ConnectCommand}" Content="{Binding ConnectionStatus}" />
+			<Grid.RowDefinitions>
+				<RowDefinition Height="30" />
+				<RowDefinition Height="30" />
+			</Grid.RowDefinitions>
+			<TextBlock VerticalAlignment="Center" FontSize="15" FontWeight="Bold" Text="Port 1:" />
+			<ComboBox
+				Grid.Column="1"
+				Margin="0,1,4,1"
+				IsEditable="False"
+				IsEnabled="{Binding CanSelectPort}"
+				ItemsSource="{Binding AvailableFirstPorts}"
+				SelectedItem="{Binding SelectedFirstPort,Mode=TwoWay}" />
+			<Button
+				Grid.Column="3"
+				Margin="3,1,0,1"
+				Command="{Binding ConnectCommand}"
+				Content="{Binding ConnectionStatus}" />
+			<TextBlock Grid.Row="1" VerticalAlignment="Center" FontSize="15" FontWeight="Bold" Text="Port 2:" />
+			<ComboBox
+				Grid.Row="1"
+				Grid.Column="1"
+				Margin="0,1,4,1"
+				IsEditable="False"
+				IsEnabled="{Binding CanSelectPort}"
+				ItemsSource="{Binding AvailableSecondPorts}"
+				SelectedItem="{Binding SelectedSecondPort,Mode=TwoWay}" />
+			<ComboBox
+				Grid.Row="1"
+				Grid.Column="2"
+				Grid.ColumnSpan="2"
+				Margin="3,1,0,1"
+				SelectedValue="{Binding Mode,Mode=OneWay}"
+				SelectedValuePath="Tag"
+				SelectionChanged="ModeSelectionChanged">
+				<ComboBoxItem Content="Szeregowy" Tag="{x:Static dual:DualMode.Series}" />
+				<ComboBoxItem Content="Równoległy" Tag="{x:Static dual:DualMode.Parallel}" />
+				<ComboBoxItem Content="Symetryczny" Tag="{x:Static dual:DualMode.Symmetric}" />
+			</ComboBox>
 		</Grid>
-		<ComboBox Grid.Row="1" Margin="0,10,0,0" SelectedValue="{Binding Mode,Mode=OneWay}"
-			SelectedValuePath="Tag" SelectionChanged="ModeSelectionChanged">
-			<ComboBoxItem Content="Szeregowy" Tag="{x:Static dual:DualMode.Series}" />
-			<ComboBoxItem Content="Równoległy" Tag="{x:Static dual:DualMode.Parallel}" />
-			<ComboBoxItem Content="Symetryczny" Tag="{x:Static dual:DualMode.Symmetric}" />
-		</ComboBox>
-		<controls:SetpointEditor Grid.Row="2" Margin="0,10,0,0" Label="Napięcie logiczne" Unit="V"
-			Text="{Binding VoltageText,Mode=TwoWay}" IncrementCommand="{Binding IncrementVoltageCommand}"
-			DecrementCommand="{Binding DecrementVoltageCommand}" CommitCommand="{Binding CommitVoltageCommand}" />
-		<TextBlock Grid.Row="3" HorizontalAlignment="Right"
+		<controls:SetpointEditor
+			Grid.Row="1"
+			Margin="0,7,0,0"
+			Label="Napięcie logiczne"
+			Unit="V"
+			Text="{Binding VoltageText,Mode=TwoWay}"
+			IncrementCommand="{Binding IncrementVoltageCommand}"
+			DecrementCommand="{Binding DecrementVoltageCommand}"
+			CommitCommand="{Binding CommitVoltageCommand}" />
+		<TextBlock
+			Grid.Row="2"
+			HorizontalAlignment="Right"
+			FontFamily="Consolas"
+			FontSize="11"
 			Text="{Binding MaximumVoltageText,StringFormat=Maksimum: {0} V}" />
-		<controls:SetpointEditor Grid.Row="4" Margin="0,6,0,0" Label="Prąd logiczny" Unit="A"
-			Text="{Binding CurrentText,Mode=TwoWay}" IncrementCommand="{Binding IncrementCurrentCommand}"
-			DecrementCommand="{Binding DecrementCurrentCommand}" CommitCommand="{Binding CommitCurrentCommand}" />
-		<TextBlock Grid.Row="5" HorizontalAlignment="Right"
+		<controls:SetpointEditor
+			Grid.Row="3"
+			Margin="0,4,0,0"
+			Label="Prąd logiczny"
+			Unit="A"
+			Text="{Binding CurrentText,Mode=TwoWay}"
+			IncrementCommand="{Binding IncrementCurrentCommand}"
+			DecrementCommand="{Binding DecrementCurrentCommand}"
+			CommitCommand="{Binding CommitCurrentCommand}" />
+		<TextBlock
+			Grid.Row="4"
+			HorizontalAlignment="Right"
+			FontFamily="Consolas"
+			FontSize="11"
 			Text="{Binding MaximumCurrentText,StringFormat=Maksimum: {0} A}" />
-		<Grid Grid.Row="6" Margin="0,10,0,0">
+		<Grid Grid.Row="5" Margin="0,6,0,0">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="*" />
 				<ColumnDefinition Width="Auto" />
@@ -61,27 +101,27 @@
 			<controls:StatusLamps IsOffline="{Binding IsOffline}" IsOff="{Binding IsOff}" IsOn="{Binding IsOn}" />
 			<Button Grid.Column="1" Width="86" Command="{Binding ToggleOutputCommand}" Content="{Binding OutputButtonText}" />
 		</Grid>
-		<Grid Grid.Row="7" Margin="0,12,0,0">
+		<Grid Grid.Row="6" Margin="0,6,0,0">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="*" />
 				<ColumnDefinition Width="*" />
 			</Grid.ColumnDefinitions>
-			<Border Grid.Column="0" Margin="0,0,5,0" Padding="8" BorderBrush="#A0A0A0" BorderThickness="1">
+			<Border Grid.Column="0" Margin="0,0,3,0" Padding="6,4" BorderBrush="#A0A0A0" BorderThickness="1">
 				<StackPanel>
-					<TextBlock FontWeight="Bold" Text="Zasilacz 1" />
-					<TextBlock FontFamily="Consolas" Text="{Binding FirstPhysicalSetpointText,StringFormat=Nastawa: {0}}" />
-					<TextBlock FontFamily="Consolas" Text="{Binding FirstMeasurementText,StringFormat=Pomiar: {0}}" />
+					<TextBlock FontFamily="Consolas" FontSize="11" FontWeight="Bold" Text="Zasilacz 1" />
+					<TextBlock FontFamily="Consolas" FontSize="10" Text="{Binding FirstPhysicalSetpointText,StringFormat=Nastawa: {0}}" />
+					<TextBlock FontFamily="Consolas" FontSize="10" Text="{Binding FirstMeasurementText,StringFormat=Pomiar: {0}}" />
 				</StackPanel>
 			</Border>
-			<Border Grid.Column="1" Margin="5,0,0,0" Padding="8" BorderBrush="#A0A0A0" BorderThickness="1">
+			<Border Grid.Column="1" Margin="3,0,0,0" Padding="6,4" BorderBrush="#A0A0A0" BorderThickness="1">
 				<StackPanel>
-					<TextBlock FontWeight="Bold" Text="Zasilacz 2" />
-					<TextBlock FontFamily="Consolas" Text="{Binding SecondPhysicalSetpointText,StringFormat=Nastawa: {0}}" />
-					<TextBlock FontFamily="Consolas" Text="{Binding SecondMeasurementText,StringFormat=Pomiar: {0}}" />
+					<TextBlock FontFamily="Consolas" FontSize="11" FontWeight="Bold" Text="Zasilacz 2" />
+					<TextBlock FontFamily="Consolas" FontSize="10" Text="{Binding SecondPhysicalSetpointText,StringFormat=Nastawa: {0}}" />
+					<TextBlock FontFamily="Consolas" FontSize="10" Text="{Binding SecondMeasurementText,StringFormat=Pomiar: {0}}" />
 				</StackPanel>
 			</Border>
 		</Grid>
-		<StackPanel Grid.Row="8" Margin="0,12,0,0">
+		<StackPanel Grid.Row="7" Margin="0,5,0,0">
 			<TextBlock HorizontalAlignment="Right" Style="{StaticResource ValueTextStyle}" Text="{Binding MeasuredVoltageText}" />
 			<TextBlock HorizontalAlignment="Right" Style="{StaticResource ValueTextStyle}" Text="{Binding MeasuredCurrentText}" />
 			<TextBlock Foreground="#FFFFA0A0" TextWrapping="Wrap" Text="{Binding ErrorMessage}" />

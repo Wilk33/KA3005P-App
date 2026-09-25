@@ -21,7 +21,7 @@ public sealed class DemoSingleSessionFactory : ISingleSessionFactory
 		PowerSupplySession session=new(
 			device,
 			timeProvider,
-			TimeSpan.FromMilliseconds(200));
+			TimeSpan.FromMilliseconds(100));
 		await session.StartAsync(cancellationToken);
 		return session;
 	}

@@ -134,7 +134,11 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 		get => selectedFirstPort;
 		set
 		{
-			if(SetProperty(ref selectedFirstPort,value) && !updatingPorts)
+			if(updatingPorts)
+			{
+				return;
+			}
+			if(SetProperty(ref selectedFirstPort,value))
 			{
 				OnPropertyChanged(nameof(FirstPortName));
 				RebuildPortLists();
@@ -147,7 +151,11 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 		get => selectedSecondPort;
 		set
 		{
-			if(SetProperty(ref selectedSecondPort,value) && !updatingPorts)
+			if(updatingPorts)
+			{
+				return;
+			}
+			if(SetProperty(ref selectedSecondPort,value))
 			{
 				OnPropertyChanged(nameof(SecondPortName));
 				RebuildPortLists();
@@ -912,24 +920,20 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 						StringComparison.OrdinalIgnoreCase));
 			}
 
-			AvailableFirstPorts.Clear();
-			foreach(string port in portSnapshot.Where(port=>
+			SynchronizePorts(
+				AvailableFirstPorts,
+				portSnapshot.Where(port=>
 				!string.Equals(
 					port,
 					selectedSecondPort,
-					StringComparison.OrdinalIgnoreCase)))
-			{
-				AvailableFirstPorts.Add(port);
-			}
-			AvailableSecondPorts.Clear();
-			foreach(string port in portSnapshot.Where(port=>
+					StringComparison.OrdinalIgnoreCase)));
+			SynchronizePorts(
+				AvailableSecondPorts,
+				portSnapshot.Where(port=>
 				!string.Equals(
 					port,
 					selectedFirstPort,
-					StringComparison.OrdinalIgnoreCase)))
-			{
-				AvailableSecondPorts.Add(port);
-			}
+					StringComparison.OrdinalIgnoreCase)));
 		}
 		finally
 		{
@@ -940,5 +944,49 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 		OnPropertyChanged(nameof(FirstPortName));
 		OnPropertyChanged(nameof(SecondPortName));
 		ConnectCommand?.RaiseCanExecuteChanged();
+	}
+
+	private static void SynchronizePorts(
+		ObservableCollection<string> target,
+		IEnumerable<string> desiredPorts)
+	{
+		string[] desired=[.. desiredPorts];
+		for(int index=0;index<desired.Length;index++)
+		{
+			if(index<target.Count && string.Equals(
+				target[index],
+				desired[index],
+				StringComparison.OrdinalIgnoreCase))
+			{
+				continue;
+			}
+
+			int existing=-1;
+			for(int candidate=index+1;candidate<target.Count;candidate++)
+			{
+				if(string.Equals(
+					target[candidate],
+					desired[index],
+					StringComparison.OrdinalIgnoreCase))
+				{
+					existing=candidate;
+					break;
+				}
+			}
+
+			if(existing >= 0)
+			{
+				target.Move(existing,index);
+			}
+			else
+			{
+				target.Insert(index,desired[index]);
+			}
+		}
+
+		while(target.Count>desired.Length)
+		{
+			target.RemoveAt(target.Count-1);
+		}
 	}
 }

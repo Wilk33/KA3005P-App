@@ -283,17 +283,28 @@ public sealed class PowerSupplySession : IPowerSupplySession
 	{
 		while(true)
 		{
-			await Task.Delay(
-				pollingInterval,
-				timeProvider,
-				cancellationToken).ConfigureAwait(false);
 			if(Snapshot.OutputState != OutputState.On)
 			{
+				await Task.Delay(
+					pollingInterval,
+					timeProvider,
+					cancellationToken).ConfigureAwait(false);
 				continue;
 			}
 
+			long cycleStarted=timeProvider.GetTimestamp();
 			MeasurementRequest request=requests.RequestMeasurement();
 			await request.Completion.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+			TimeSpan remaining=pollingInterval-timeProvider.GetElapsedTime(
+				cycleStarted,
+				timeProvider.GetTimestamp());
+			if(remaining > TimeSpan.Zero)
+			{
+				await Task.Delay(
+					remaining,
+					timeProvider,
+					cancellationToken).ConfigureAwait(false);
+			}
 		}
 	}
 

@@ -35,7 +35,7 @@ public sealed class SerialSingleSessionFactory : ISingleSessionFactory
 			PowerSupplySession session=new(
 				device,
 				timeProvider,
-				TimeSpan.FromMilliseconds(200));
+				TimeSpan.FromMilliseconds(100));
 			await session.StartAsync(cancellationToken).ConfigureAwait(false);
 			return session;
 		}

@@ -8,7 +8,7 @@ namespace Ka3005P.Tests.Sessions;
 public sealed class MeasurementLoopTests
 {
 	[Fact]
-	public async Task Polling_StopsAtOff_AndNeverQueuesSecondMeasurement()
+	public async Task Polling_StopsAfterOutputOffCompletes()
 	{
 		ManualTimeProvider time=new();
 		FakePowerSupplyDevice device=new();
@@ -29,8 +29,9 @@ public sealed class MeasurementLoopTests
 		Assert.Equal(1,device.MeasurementReads);
 		device.ReleaseOperation();
 		await session.SetOutputAsync(false,CancellationToken.None);
+		int readsAfterOff=device.MeasurementReads;
 		time.Advance(TimeSpan.FromSeconds(1));
-		Assert.Equal(1,device.MeasurementReads);
+		Assert.Equal(readsAfterOff,device.MeasurementReads);
 	}
 
 	[Fact]
@@ -80,5 +81,25 @@ public sealed class MeasurementLoopTests
 
 		Assert.Equal(TimeSpan.FromMilliseconds(250).Ticks,timestamp);
 		Assert.Equal(TimeSpan.Zero,session.Snapshot.MeasurementAge);
+	}
+
+	[Fact]
+	public async Task SlowMeasurement_DoesNotAddAnotherFullIntervalAfterCompletion()
+	{
+		ManualTimeProvider time=new();
+		FakePowerSupplyDevice device=new();
+		await using PowerSupplySession session=
+			new(device,time,TimeSpan.FromMilliseconds(100));
+		await session.StartAsync(CancellationToken.None);
+		await session.SetOutputAsync(true,CancellationToken.None);
+		device.BlockNextMeasurement();
+
+		time.Advance(TimeSpan.FromMilliseconds(100));
+		await device.WaitUntilMeasurementStartsAsync();
+		time.Advance(TimeSpan.FromMilliseconds(150));
+		device.ReleaseOperation();
+
+		await device.WaitForMeasurementReadsAsync(2);
+		Assert.Equal(2,device.MeasurementReads);
 	}
 }

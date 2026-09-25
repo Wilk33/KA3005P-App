@@ -7,6 +7,7 @@ using Ka3005P.Core.Measurements;
 using Ka3005P.Core.Protocol;
 using Ka3005P.Core.Sessions;
 using Ka3005P.Tests.Fakes;
+using System.Collections.Specialized;
 
 namespace Ka3005P.Tests.ViewModels;
 
@@ -27,6 +28,30 @@ public sealed class DualSupplyViewModelTests
 		Assert.DoesNotContain("COM5",viewModel.AvailableSecondPorts);
 		Assert.DoesNotContain("COM6",viewModel.AvailableFirstPorts);
 		Assert.True(viewModel.ConnectCommand.CanExecute(null));
+	}
+
+	[Fact]
+	public void SelectingCom5AndCom6_PreservesBothSelectionsAfterListRebuild()
+	{
+		DualSupplyViewModel viewModel=new(
+			new PortLeaseRegistry(),
+			new FakeSessionFactory(),
+			["COM1","COM2","COM3","COM4","COM5","COM6"]);
+		bool collectionWasReset=false;
+		viewModel.AvailableFirstPorts.CollectionChanged+=(_,eventArgs)=>
+			collectionWasReset|=eventArgs.Action == NotifyCollectionChangedAction.Reset;
+		viewModel.AvailableSecondPorts.CollectionChanged+=(_,eventArgs)=>
+			collectionWasReset|=eventArgs.Action == NotifyCollectionChangedAction.Reset;
+
+		viewModel.SelectedFirstPort="COM5";
+		viewModel.SelectedSecondPort="COM6";
+
+		Assert.Equal("COM5",viewModel.SelectedFirstPort);
+		Assert.Equal("COM6",viewModel.SelectedSecondPort);
+		Assert.DoesNotContain("COM6",viewModel.AvailableFirstPorts);
+		Assert.DoesNotContain("COM5",viewModel.AvailableSecondPorts);
+		Assert.True(viewModel.ConnectCommand.CanExecute(null));
+		Assert.False(collectionWasReset);
 	}
 
 	[Fact]

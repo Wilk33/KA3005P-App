@@ -41,8 +41,8 @@ public sealed class MainWindowViewModelTests
 		Assert.True(single.Closed);
 		Assert.Equal(ApplicationMode.Dual,viewModel.SelectedMode);
 		Assert.False(viewModel.CurrentMode.IsConnected);
-		Assert.Equal(480,viewModel.WindowWidth);
-		Assert.Equal(590,viewModel.WindowHeight);
+		Assert.Equal(380,viewModel.WindowWidth);
+		Assert.Equal(500,viewModel.WindowHeight);
 	}
 
 	private sealed class FakeModeFactory : ISupplyModeFactory

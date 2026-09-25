@@ -55,6 +55,7 @@ internal static class Program
 			}
 			await WaitForSetpointsAsync(first,second,150,200,timeout.Token);
 			Console.WriteLine("Szybka seria zakończona: 1,50 V i 0,200 A na zasilacz.");
+			await MeasureCadenceAsync(first,second,timeout.Token);
 
 			await Task.Delay(500,timeout.Token);
 			long measurementStartedAt=Stopwatch.GetTimestamp();
@@ -113,7 +114,7 @@ internal static class Program
 			PowerSupplySession session=new(
 				device,
 				TimeProvider.System,
-				TimeSpan.FromMilliseconds(200));
+				TimeSpan.FromMilliseconds(100));
 			await session.StartAsync(cancellationToken);
 			return session;
 		}
@@ -122,6 +123,75 @@ internal static class Program
 			await transport.DisposeAsync();
 			throw;
 		}
+	}
+
+	private static async Task MeasureCadenceAsync(
+		IPowerSupplySession first,
+		IPowerSupplySession second,
+		CancellationToken cancellationToken)
+	{
+		object gate=new();
+		List<long> firstTimestamps=[];
+		List<long> secondTimestamps=[];
+		void RecordFirst(object? sender,Ka3005P.Core.Measurements.MeasurementSample sample)
+		{
+			lock(gate)
+			{
+				firstTimestamps.Add(sample.Timestamp);
+			}
+		}
+		void RecordSecond(object? sender,Ka3005P.Core.Measurements.MeasurementSample sample)
+		{
+			lock(gate)
+			{
+				secondTimestamps.Add(sample.Timestamp);
+			}
+		}
+
+		first.MeasurementReceived+=RecordFirst;
+		second.MeasurementReceived+=RecordSecond;
+		try
+		{
+			await WaitUntilAsync(
+				()=>
+				{
+					lock(gate)
+					{
+						return firstTimestamps.Count>=10 &&
+							secondTimestamps.Count>=10;
+					}
+				},
+				first,
+				second,
+				cancellationToken);
+		}
+		finally
+		{
+			first.MeasurementReceived-=RecordFirst;
+			second.MeasurementReceived-=RecordSecond;
+		}
+
+		long[] firstSnapshot;
+		long[] secondSnapshot;
+		lock(gate)
+		{
+			firstSnapshot=[.. firstTimestamps];
+			secondSnapshot=[.. secondTimestamps];
+		}
+		Console.WriteLine("Odstęp próbek 1: "+FormatCadence(firstSnapshot));
+		Console.WriteLine("Odstęp próbek 2: "+FormatCadence(secondSnapshot));
+	}
+
+	private static string FormatCadence(IReadOnlyList<long> timestamps)
+	{
+		double[] intervals=Enumerable.Range(1,timestamps.Count-1)
+			.Select(index=>Stopwatch.GetElapsedTime(
+				timestamps[index-1],
+				timestamps[index]).TotalMilliseconds)
+			.ToArray();
+		return $"średnio {intervals.Average():0.0} ms, "+
+			$"min {intervals.Min():0.0} ms, max {intervals.Max():0.0} ms, "+
+			$"próbek {timestamps.Count}";
 	}
 
 	private static async Task WaitForSetpointsAsync(

@@ -18,7 +18,7 @@ public sealed class SerialPortCatalogTests
 	public void DemoCatalog_ReturnsStablePorts()
 	{
 		Assert.Equal(
-			["COM5","COM6","COM7"],
+			["COM1","COM2","COM3","COM4","COM5","COM6"],
 			new DemoSerialPortCatalog().GetPortNames());
 	}
 }
