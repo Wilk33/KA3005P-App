@@ -1,6 +1,7 @@
 using Ka3005P.App.Services;
 using Ka3005P.App.ViewModels;
 using Ka3005P.Core.Configuration;
+using Ka3005P.Core.Device;
 using Ka3005P.Core.Measurements;
 using Ka3005P.Core.Sessions;
 using Ka3005P.Tests.Fakes;
@@ -207,6 +208,29 @@ public sealed class SingleSupplyViewModelTests
 		Assert.True(session.StopRequested);
 		Assert.True(leases.TryAcquire("COM7",out PortLease? lease));
 		lease.Dispose();
+	}
+
+	[Fact]
+	public async Task CommunicationFailure_TransitionsOfflineAndDisposesSession()
+	{
+		FakePowerSupplySession session=new();
+		SingleSupplyViewModel viewModel=new(session);
+
+		session.PublishError(new DeviceCommunicationException("utrata COM5"));
+		await WaitUntilAsync(()=>!viewModel.IsConnected);
+
+		Assert.True(session.StopRequested);
+		Assert.True(session.DisposeRequested);
+		Assert.Contains("utrata COM5",viewModel.ErrorMessage);
+	}
+
+	private static async Task WaitUntilAsync(Func<bool> condition)
+	{
+		using CancellationTokenSource timeout=new(TimeSpan.FromSeconds(2));
+		while(!condition())
+		{
+			await Task.Delay(10,timeout.Token);
+		}
 	}
 
 	private sealed class FakeSingleSessionFactory : ISingleSessionFactory

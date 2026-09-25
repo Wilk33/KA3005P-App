@@ -1,17 +1,15 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="..\Ka3005P.Core\Ka3005P.Core.csproj" />
+    <Resource Include="Assets/KA3005P.ico" />
+    <ProjectReference Include="../Ka3005P.Core/Ka3005P.Core.csproj" />
   </ItemGroup>
-
   <ItemGroup>
-    <Content Include="..\..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="..\..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="..\..\assets\reference\KoradS150.png" Link="ReferenceAssets\KoradS150.png" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="..\..\assets\reference\KoradD150.png" Link="ReferenceAssets\KoradD150.png" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="..\..\assets\reference\KoradM150.png" Link="ReferenceAssets\KoradM150.png" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../assets/reference/KoradS150.png" Link="ReferenceAssets/KoradS150.png" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../assets/reference/KoradD150.png" Link="ReferenceAssets/KoradD150.png" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../assets/reference/KoradM150.png" Link="ReferenceAssets/KoradM150.png" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
-
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
@@ -20,5 +18,4 @@
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets/KA3005P.ico</ApplicationIcon>
   </PropertyGroup>
-
 </Project>

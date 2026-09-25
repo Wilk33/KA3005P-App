@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using Ka3005P.App.Infrastructure;
 using Ka3005P.App.Services;
 using Ka3005P.Core.Configuration;
+using Ka3005P.Core.Device;
 using Ka3005P.Core.Measurements;
 using Ka3005P.Core.Protocol;
 using Ka3005P.Core.Sessions;
@@ -34,6 +35,7 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 	private bool isResistanceVisible;
 	private bool hasValidationError;
 	private bool closing;
+	private int faultCleanupScheduled;
 
 	public event EventHandler<bool>? OutputStateChanged;
 	public event EventHandler<bool>? ConnectionStateChanged;
@@ -464,10 +466,28 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 
 	private void OnSnapshotChanged(object? sender,SessionSnapshot snapshot)
 	{
+		if(snapshot.Error?.Exception is DeviceCommunicationException exception)
+		{
+			ScheduleFaultCleanup(exception.Message);
+			return;
+		}
 		Dispatch(()=>
 		{
 			IsOutputOn=snapshot.OutputState == OutputState.On;
 			ErrorMessage=snapshot.Error?.Message;
+		});
+	}
+
+	private void ScheduleFaultCleanup(string message)
+	{
+		if(Interlocked.Exchange(ref faultCleanupScheduled,1) != 0)
+		{
+			return;
+		}
+		_=Task.Run(async ()=>
+		{
+			await CloseAsync(CancellationToken.None);
+			Dispatch(()=>ErrorMessage=message);
 		});
 	}
 

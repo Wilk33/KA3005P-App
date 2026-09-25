@@ -4,7 +4,6 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:controls="clr-namespace:Ka3005P.App.Controls"
 	Title="Wykres"
-	Icon="/Ka3005P.App;component/Assets/KA3005P.ico"
 	Background="{StaticResource KoradBackgroundBrush}"
 	Foreground="{StaticResource KoradTextBrush}"
 	Width="650"

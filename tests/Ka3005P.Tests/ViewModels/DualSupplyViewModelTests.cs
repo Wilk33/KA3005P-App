@@ -1,6 +1,7 @@
 using Ka3005P.App.Services;
 using Ka3005P.App.ViewModels;
 using Ka3005P.Core.Configuration;
+using Ka3005P.Core.Device;
 using Ka3005P.Core.Dual;
 using Ka3005P.Core.Measurements;
 using Ka3005P.Core.Protocol;
@@ -192,6 +193,29 @@ public sealed class DualSupplyViewModelTests
 		Assert.Equal("0,400 A",viewModel.MeasuredCurrentText);
 		Assert.Equal("12,00 V / 0,400 A",viewModel.FirstMeasurementText);
 		Assert.Equal("11,00 V / 0,350 A",viewModel.SecondMeasurementText);
+	}
+
+	[Fact]
+	public async Task CommunicationFailure_ClosesBothDualSessions()
+	{
+		(DualSupplyViewModel viewModel,FakePowerSupplySession first,FakePowerSupplySession second)=
+			CreateViewModel();
+
+		first.PublishError(new DeviceCommunicationException("utrata COM5"));
+		await WaitUntilAsync(()=>!viewModel.IsConnected);
+
+		Assert.True(first.DisposeRequested);
+		Assert.True(second.DisposeRequested);
+		Assert.Contains("utrata COM5",viewModel.ErrorMessage);
+	}
+
+	private static async Task WaitUntilAsync(Func<bool> condition)
+	{
+		using CancellationTokenSource timeout=new(TimeSpan.FromSeconds(2));
+		while(!condition())
+		{
+			await Task.Delay(10,timeout.Token);
+		}
 	}
 
 	private static (

@@ -39,6 +39,8 @@ public partial class MainWindow : Window
 			? viewModel.SelectSingleCommand
 			: viewModel.SelectDualCommand;
 		await command.ExecuteAsync(null);
+		SingleModeItem.IsChecked=viewModel.IsSingleSelected;
+		DualModeItem.IsChecked=viewModel.IsDualSelected;
 	}
 
 	private void OpenChartClick(object sender,RoutedEventArgs eventArgs)

@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using Ka3005P.App.Infrastructure;
 using Ka3005P.App.Services;
 using Ka3005P.Core.Configuration;
+using Ka3005P.Core.Device;
 using Ka3005P.Core.Dual;
 using Ka3005P.Core.Measurements;
 using Ka3005P.Core.Protocol;
@@ -42,6 +43,7 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 	private bool isOutputOn;
 	private bool setpointsAreValid=true;
 	private bool closing;
+	private int faultCleanupScheduled;
 
 	public event EventHandler<bool>? OutputStateChanged;
 	public event EventHandler<bool>? ConnectionStateChanged;
@@ -670,12 +672,33 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 
 	private void OnDualSnapshotChanged(object? sender,DualControllerSnapshot snapshot)
 	{
+		DeviceCommunicationException? communicationError=
+			snapshot.First.Error?.Exception as DeviceCommunicationException ??
+			snapshot.Second.Error?.Exception as DeviceCommunicationException;
+		if(communicationError is not null)
+		{
+			ScheduleFaultCleanup(communicationError.Message);
+			return;
+		}
 		Dispatch(()=>
 		{
 			if(snapshot.LastOutputOperation is { IsSuccess: false } operation)
 			{
 				ErrorMessage=BuildOperationError(operation);
 			}
+		});
+	}
+
+	private void ScheduleFaultCleanup(string message)
+	{
+		if(Interlocked.Exchange(ref faultCleanupScheduled,1) != 0)
+		{
+			return;
+		}
+		_=Task.Run(async ()=>
+		{
+			await CloseAsync(CancellationToken.None);
+			Dispatch(()=>ErrorMessage=message);
 		});
 	}
 

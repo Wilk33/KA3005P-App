@@ -5,7 +5,6 @@
 	xmlns:viewModels="clr-namespace:Ka3005P.App.ViewModels"
 	xmlns:views="clr-namespace:Ka3005P.App.Views"
 	Title="Korad"
-	Icon="/Ka3005P.App;component/Assets/KA3005P.ico"
 	Background="{StaticResource KoradBackgroundBrush}"
 	Foreground="{StaticResource KoradTextBrush}"
 	Width="{Binding WindowWidth}"
@@ -24,11 +23,13 @@
 		<Menu DockPanel.Dock="Top">
 			<MenuItem Header="Tryb pracy">
 				<MenuItem
+					x:Name="SingleModeItem"
 					Header="Pojedynczy"
 					IsCheckable="True"
 					IsChecked="{Binding IsSingleSelected,Mode=OneWay}"
 					Click="SelectSingleClick" />
 				<MenuItem
+					x:Name="DualModeItem"
 					Header="Dual"
 					IsCheckable="True"
 					IsChecked="{Binding IsDualSelected,Mode=OneWay}"

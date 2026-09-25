@@ -29,6 +29,7 @@ internal sealed class FakePowerSupplySession : IPowerSupplySession
 	public CurrentSetpoint? RequestedCurrent =>
 		currents.Count == 0 ? null : CurrentSetpoint.FromThousandths(currents[^1]);
 	public bool StopRequested { get; private set; }
+	public bool DisposeRequested { get; private set; }
 	public int MeasurementRequests => measurementRequests;
 	public Exception? OutputFailure { get; set; }
 
@@ -127,8 +128,21 @@ internal sealed class FakePowerSupplySession : IPowerSupplySession
 		MeasurementReceived?.Invoke(this,sample);
 	}
 
+	public void PublishError(Exception exception)
+	{
+		Snapshot=Snapshot with
+		{
+			Error=new SessionError(
+				DateTimeOffset.UtcNow,
+				exception.Message,
+				exception)
+		};
+		SnapshotChanged?.Invoke(this,Snapshot);
+	}
+
 	public ValueTask DisposeAsync()
 	{
+		DisposeRequested=true;
 		return ValueTask.CompletedTask;
 	}
 
