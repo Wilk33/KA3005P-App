@@ -3,7 +3,6 @@ using System.Windows;
 using Ka3005P.App.Demo;
 using Ka3005P.App.Services;
 using Ka3005P.App.ViewModels;
-using Ka3005P.App.Views;
 using Ka3005P.Core.Configuration;
 
 namespace Ka3005P.App;
@@ -28,36 +27,21 @@ public partial class App
 			"KA3005P App");
 		ISettingsStore settings=new JsonSettingsStore(
 			Path.Combine(dataDirectory,"settings.json"));
-		WindowService windows=new(OpenRequestedWindow);
-		ManagerViewModel viewModel=new(windows,settings);
+		ISerialPortCatalog catalog=demoMode
+			? new DemoSerialPortCatalog()
+			: new SystemSerialPortCatalog();
+		SerialPortMonitor portMonitor=new(
+			catalog,
+			TimeSpan.FromSeconds(1));
+		SupplyModeFactory modes=new(portLeases,singleSessionFactory);
+		MainWindowViewModel viewModel=new(modes,portMonitor,settings);
 		await viewModel.InitializeAsync(CancellationToken.None);
-		ManagerWindow window=new()
+		MainWindow window=new()
 		{
 			DataContext=viewModel,
-			Title=demoMode ? "Korad Manager - DEMO" : "Korad Manager"
+			Title=demoMode ? "Korad - DEMO" : "Korad"
 		};
 		MainWindow=window;
 		window.Show();
-	}
-
-	private void OpenRequestedWindow(WindowRequest request)
-	{
-		if(request.Kind == WindowKind.Single)
-		{
-			SingleSupplyWindow window=new()
-			{
-				Owner=MainWindow,
-				DataContext=new SingleSupplyViewModel(portLeases,singleSessionFactory)
-			};
-			window.Show();
-			return;
-		}
-
-		DualSupplyWindow dualWindow=new()
-		{
-			Owner=MainWindow,
-			DataContext=new DualSupplyViewModel(portLeases,singleSessionFactory)
-		};
-		dualWindow.Show();
 	}
 }

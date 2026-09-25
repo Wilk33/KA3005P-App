@@ -10,8 +10,7 @@ using Ka3005P.Core.Sessions;
 
 namespace Ka3005P.App.ViewModels;
 
-public sealed class SingleSupplyViewModel : ObservableObject,IOutputController,
-	IChartSampleSource,IMeasurementExporter
+public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewModel
 {
 	private static readonly CultureInfo PolishCulture=
 		CultureInfo.GetCultureInfo("pl-PL");
@@ -195,6 +194,9 @@ public sealed class SingleSupplyViewModel : ObservableObject,IOutputController,
 	public bool IsOffline => !IsConnected;
 	public bool IsOff => IsConnected && !IsOutputOn;
 	public bool IsOn => IsConnected && IsOutputOn;
+	public ApplicationMode ApplicationMode => ApplicationMode.Single;
+	public string? PrimaryPort => SelectedPort;
+	public string? SecondaryPort => null;
 
 	public ChartViewModel CreateChartViewModel(IFileDialogService fileDialog)
 	{

@@ -11,8 +11,7 @@ using Ka3005P.Core.Sessions;
 
 namespace Ka3005P.App.ViewModels;
 
-public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
-	IChartSampleSource,IMeasurementExporter
+public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 {
 	private static readonly CultureInfo PolishCulture=
 		CultureInfo.GetCultureInfo("pl-PL");
@@ -227,6 +226,9 @@ public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
 	public bool IsOffline => !IsConnected;
 	public bool IsOff => IsConnected && !IsOutputOn;
 	public bool IsOn => IsConnected && IsOutputOn;
+	public ApplicationMode ApplicationMode => ApplicationMode.Dual;
+	public string? PrimaryPort => SelectedFirstPort;
+	public string? SecondaryPort => SelectedSecondPort;
 
 	public ChartViewModel CreateChartViewModel(IFileDialogService fileDialog)
 	{
@@ -521,6 +523,7 @@ public sealed class DualSupplyViewModel : ObservableObject,IOutputController,
 			if(!off.IsSuccess)
 			{
 				ErrorMessage=BuildOperationError(off);
+				OnPropertyChanged(nameof(Mode));
 				return;
 			}
 			IsOutputOn=false;
