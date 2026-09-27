@@ -20,6 +20,7 @@ public enum MeasurementExportKind
 public sealed class CsvMeasurementWriter
 {
 	private readonly TextWriter output;
+	private long sampleIndex;
 
 	public CsvMeasurementWriter(TextWriter output)
 	{
@@ -45,7 +46,7 @@ public sealed class CsvMeasurementWriter
 			? FormatVoltage(sample.VoltageHundredths)
 			: FormatCurrent(sample.CurrentThousandths);
 		return WriteTextAsync(
-			$"{FormatTime(sample.Elapsed)};{value};\n",
+			$"{NextSampleIndex()};{FormatTime(sample.Elapsed)};{value};\n",
 			cancellationToken);
 	}
 
@@ -68,7 +69,8 @@ public sealed class CsvMeasurementWriter
 	{
 		int valueCount=GetValueCount(layout,kind);
 		return WriteTextAsync(
-			FormatTime(elapsed)+";"+new string(';',valueCount)+"\n",
+			NextSampleIndex()+";"+FormatTime(elapsed)+";"+
+			new string(';',valueCount)+"\n",
 			cancellationToken);
 	}
 
@@ -79,60 +81,60 @@ public sealed class CsvMeasurementWriter
 		return (layout,kind) switch
 		{
 			(MeasurementLayout.Single,MeasurementExportKind.Voltage)=>
-				("Time;Voltage;","[s];[V];"),
+				("Sample;Time;Voltage;","[-];[s];[V];"),
 			(MeasurementLayout.Single,MeasurementExportKind.Current)=>
-				("Time;Current;","[s];[A];"),
+				("Sample;Time;Current;","[-];[s];[A];"),
 			(MeasurementLayout.Series,MeasurementExportKind.Voltage)=>
-				("Time;Voltage 1;Voltage 2;Voltage total;",
-				"[s];[V];[V];[V];"),
+				("Sample;Time;Voltage 1;Voltage 2;Voltage total;",
+				"[-];[s];[V];[V];[V];"),
 			(MeasurementLayout.Series,MeasurementExportKind.Current)=>
-				("Time;Current 1;Current 2;","[s];[A];[A];"),
+				("Sample;Time;Current 1;Current 2;","[-];[s];[A];[A];"),
 			(MeasurementLayout.Parallel,MeasurementExportKind.Voltage)=>
-				("Time;Voltage 1;Voltage 2;","[s];[V];[V];"),
+				("Sample;Time;Voltage 1;Voltage 2;","[-];[s];[V];[V];"),
 			(MeasurementLayout.Parallel,MeasurementExportKind.Current)=>
-				("Time;Current 1;Current 2;Current total;",
-				"[s];[A];[A];[A];"),
+				("Sample;Time;Current 1;Current 2;Current total;",
+				"[-];[s];[A];[A];[A];"),
 			(MeasurementLayout.Symmetric,MeasurementExportKind.Voltage)=>
-				("Time;Voltage -;Voltage +;","[s];[V];[V];"),
+				("Sample;Time;Voltage -;Voltage +;","[-];[s];[V];[V];"),
 			(MeasurementLayout.Symmetric,MeasurementExportKind.Current)=>
-				("Time;Current -;Current +;","[s];[A];[A];"),
+				("Sample;Time;Current -;Current +;","[-];[s];[A];[A];"),
 			_=>throw new ArgumentOutOfRangeException(nameof(layout))
 		};
 	}
 
-	private static string FormatDualVoltage(DualMeasurement measurement)
+	private string FormatDualVoltage(DualMeasurement measurement)
 	{
-		string time=FormatTime(MaxElapsed(measurement));
+		string prefix=NextSampleIndex()+";"+FormatTime(MaxElapsed(measurement));
 		return measurement.Mode switch
 		{
 			DualMode.Series=>
-				$"{time};{FormatVoltage(measurement.First.VoltageHundredths)};"+
+				$"{prefix};{FormatVoltage(measurement.First.VoltageHundredths)};"+
 				$"{FormatVoltage(measurement.Second.VoltageHundredths)};"+
 				$"{FormatVoltage(measurement.VoltageHundredths)};\n",
 			DualMode.Parallel=>
-				$"{time};{FormatVoltage(measurement.First.VoltageHundredths)};"+
+				$"{prefix};{FormatVoltage(measurement.First.VoltageHundredths)};"+
 				$"{FormatVoltage(measurement.Second.VoltageHundredths)};\n",
 			DualMode.Symmetric=>
-				$"{time};{FormatVoltage(measurement.FirstSignedVoltageHundredths)};"+
+				$"{prefix};{FormatVoltage(measurement.FirstSignedVoltageHundredths)};"+
 				$"{FormatVoltage(measurement.SecondSignedVoltageHundredths)};\n",
 			_=>throw new ArgumentOutOfRangeException(nameof(measurement))
 		};
 	}
 
-	private static string FormatDualCurrent(DualMeasurement measurement)
+	private string FormatDualCurrent(DualMeasurement measurement)
 	{
-		string time=FormatTime(MaxElapsed(measurement));
+		string prefix=NextSampleIndex()+";"+FormatTime(MaxElapsed(measurement));
 		return measurement.Mode switch
 		{
 			DualMode.Series=>
-				$"{time};{FormatCurrent(measurement.First.CurrentThousandths)};"+
+				$"{prefix};{FormatCurrent(measurement.First.CurrentThousandths)};"+
 				$"{FormatCurrent(measurement.Second.CurrentThousandths)};\n",
 			DualMode.Parallel=>
-				$"{time};{FormatCurrent(measurement.First.CurrentThousandths)};"+
+				$"{prefix};{FormatCurrent(measurement.First.CurrentThousandths)};"+
 				$"{FormatCurrent(measurement.Second.CurrentThousandths)};"+
 				$"{FormatCurrent(measurement.CurrentThousandths)};\n",
 			DualMode.Symmetric=>
-				$"{time};{FormatCurrent(measurement.FirstSignedCurrentThousandths)};"+
+				$"{prefix};{FormatCurrent(measurement.FirstSignedCurrentThousandths)};"+
 				$"{FormatCurrent(measurement.SecondSignedCurrentThousandths)};\n",
 			_=>throw new ArgumentOutOfRangeException(nameof(measurement))
 		};
@@ -174,6 +176,11 @@ public sealed class CsvMeasurementWriter
 	private static string FormatCurrent(int thousandths)
 	{
 		return (thousandths/1000m).ToString("0.000",CultureInfo.InvariantCulture);
+	}
+
+	private long NextSampleIndex()
+	{
+		return sampleIndex++;
 	}
 
 	private async ValueTask WriteTextAsync(

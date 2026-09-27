@@ -5,9 +5,9 @@ namespace Ka3005P.App.Controls;
 
 public partial class StatusLamps : UserControl
 {
-	public static readonly DependencyProperty IsOfflineProperty=
+	public static readonly DependencyProperty IsOnlineProperty=
 		DependencyProperty.Register(
-			nameof(IsOffline),
+			nameof(IsOnline),
 			typeof(bool),
 			typeof(StatusLamps));
 	public static readonly DependencyProperty IsOffProperty=
@@ -26,10 +26,10 @@ public partial class StatusLamps : UserControl
 		InitializeComponent();
 	}
 
-	public bool IsOffline
+	public bool IsOnline
 	{
-		get => (bool)GetValue(IsOfflineProperty);
-		set => SetValue(IsOfflineProperty,value);
+		get => (bool)GetValue(IsOnlineProperty);
+		set => SetValue(IsOnlineProperty,value);
 	}
 
 	public bool IsOff

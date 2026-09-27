@@ -1,24 +1,39 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using Ka3005P.App.Infrastructure;
 using Ka3005P.App.Services;
 using Ka3005P.Core.Measurements;
 
 namespace Ka3005P.App.ViewModels;
 
-public readonly record struct ChartPoint(TimeSpan Elapsed,double Value);
+public readonly record struct ChartPoint(
+	TimeSpan Elapsed,
+	double VoltageVolts,
+	double CurrentAmperes);
 
 public sealed class ChartViewModel : ObservableObject,IDisposable
 {
 	private const int MaximumPoints=50;
-	private const double AxisMargin=0.5;
+	private const double CurrentAxisMargin=0.5;
+	private const double VoltageAxisMargin=1;
+	private static readonly CultureInfo PolishCulture=
+		CultureInfo.GetCultureInfo("pl-PL");
 	private readonly IOutputController outputController;
 	private readonly IChartSampleSource? sampleSource;
 	private readonly IMeasurementExporter? exporter;
 	private readonly IFileDialogService? fileDialog;
 	private bool isOutputOn;
 	private bool isConnected;
+	private bool showCurrent=true;
+	private bool showVoltage;
+	private bool isResistanceVisible;
 	private double minimumY;
 	private double maximumY=1;
+	private double minimumVoltageY;
+	private double maximumVoltageY=1;
+	private string voltageText="0,00 V";
+	private string currentText="0,000 A";
+	private string? resistanceText;
 	private string? errorMessage;
 	private bool disposed;
 
@@ -86,12 +101,24 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 		{
 			if(SetProperty(ref isConnected,value))
 			{
-				OnPropertyChanged(nameof(IsOffline));
+				OnPropertyChanged(nameof(IsOnline));
 				OnPropertyChanged(nameof(IsOff));
 				OnPropertyChanged(nameof(IsOn));
 				ToggleOutputCommand.RaiseCanExecuteChanged();
 			}
 		}
+	}
+
+	public bool ShowCurrent
+	{
+		get => showCurrent;
+		set => SetProperty(ref showCurrent,value);
+	}
+
+	public bool ShowVoltage
+	{
+		get => showVoltage;
+		set => SetProperty(ref showVoltage,value);
 	}
 
 	public double MinimumY
@@ -106,10 +133,46 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 		private set => SetProperty(ref maximumY,value);
 	}
 
+	public double MinimumVoltageY
+	{
+		get => minimumVoltageY;
+		private set => SetProperty(ref minimumVoltageY,value);
+	}
+
+	public double MaximumVoltageY
+	{
+		get => maximumVoltageY;
+		private set => SetProperty(ref maximumVoltageY,value);
+	}
+
+	public string VoltageText
+	{
+		get => voltageText;
+		private set => SetProperty(ref voltageText,value);
+	}
+
+	public string CurrentText
+	{
+		get => currentText;
+		private set => SetProperty(ref currentText,value);
+	}
+
+	public string? ResistanceText
+	{
+		get => resistanceText;
+		private set => SetProperty(ref resistanceText,value);
+	}
+
+	public bool IsResistanceVisible
+	{
+		get => isResistanceVisible;
+		private set => SetProperty(ref isResistanceVisible,value);
+	}
+
 	public string OutputButtonText => IsOutputOn ? "ON" : "OFF";
+	public bool IsOnline => IsConnected;
 	public bool IsOff => IsConnected && !IsOutputOn;
 	public bool IsOn => IsConnected && IsOutputOn;
-	public bool IsOffline => !IsConnected;
 
 	public string? ErrorMessage
 	{
@@ -119,12 +182,7 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 
 	public void AddSample(TimeSpan elapsed,double value)
 	{
-		Points.Add(new ChartPoint(elapsed,value));
-		while(Points.Count>MaximumPoints)
-		{
-			Points.RemoveAt(0);
-		}
-		RecalculateAxis();
+		AddPoint(new ChartPoint(elapsed,0,value));
 	}
 
 	public void Dispose()
@@ -140,6 +198,16 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 		{
 			sampleSource.ChartSampleReceived-=OnChartSampleReceived;
 		}
+	}
+
+	private void AddPoint(ChartPoint point)
+	{
+		Points.Add(point);
+		while(Points.Count>MaximumPoints)
+		{
+			Points.RemoveAt(0);
+		}
+		RecalculateAxes();
 	}
 
 	private async Task ToggleOutputAsync(object? parameter)
@@ -169,18 +237,35 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 		ErrorMessage=null;
 	}
 
-	private void RecalculateAxis()
+	private void RecalculateAxes()
 	{
 		if(Points.Count == 0)
 		{
 			MinimumY=0;
 			MaximumY=1;
+			MinimumVoltageY=0;
+			MaximumVoltageY=1;
 			return;
 		}
-		double minimum=Points.Min(point=>point.Value);
-		double maximum=Points.Max(point=>point.Value);
-		MinimumY=Math.Max(0,minimum-AxisMargin);
-		MaximumY=maximum+AxisMargin;
+		(double currentMinimum,double currentMaximum)=GetRange(
+			Points.Select(point=>point.CurrentAmperes),
+			CurrentAxisMargin);
+		MinimumY=currentMinimum;
+		MaximumY=currentMaximum;
+		(double voltageMinimum,double voltageMaximum)=GetRange(
+			Points.Select(point=>point.VoltageVolts),
+			VoltageAxisMargin);
+		MinimumVoltageY=voltageMinimum;
+		MaximumVoltageY=voltageMaximum;
+	}
+
+	private static (double Minimum,double Maximum) GetRange(
+		IEnumerable<double> values,
+		double margin)
+	{
+		double minimum=values.Min();
+		double maximum=values.Max();
+		return (Math.Max(0,minimum-margin),maximum+margin);
 	}
 
 	private void OnOutputStateChanged(object? sender,bool enabled)
@@ -195,6 +280,26 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 
 	private void OnChartSampleReceived(object? sender,ChartSample sample)
 	{
-		AddSample(sample.Elapsed,sample.CurrentAmperes);
+		AddPoint(new ChartPoint(
+			sample.Elapsed,
+			sample.VoltageHundredths/100d,
+			sample.CurrentThousandths/1000d));
+		VoltageText=(sample.VoltageHundredths/100m)
+			.ToString("0.00",PolishCulture)+" V";
+		CurrentText=(sample.CurrentThousandths/1000m)
+			.ToString("0.000",PolishCulture)+" A";
+		if(sample.IsCurrentLimited && ResistanceFormatter.TryFormat(
+			sample.VoltageHundredths,
+			sample.CurrentThousandths,
+			out string? resistance))
+		{
+			ResistanceText=resistance;
+			IsResistanceVisible=true;
+		}
+		else
+		{
+			ResistanceText=null;
+			IsResistanceVisible=false;
+		}
 	}
 }

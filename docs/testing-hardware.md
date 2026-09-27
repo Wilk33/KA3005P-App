@@ -28,10 +28,15 @@ Sprawdź kolejno:
 
 1. Otwórz pojedynczy Korad, wybierz `Offline`, ustaw 12,00 V i 1,000 A, a następnie ON.
 2. Zmieniaj napięcie i prąd podczas ON. Edytory i okno muszą reagować natychmiast.
-3. Otwórz wykres. Stan ON/OFF musi pozostać wspólny, a wykres ma zachować najwyżej 50 punktów.
-4. Zapisz osobno napięcie i prąd do CSV.
-5. Otwórz Dual, połącz dwa różne fikcyjne porty i sprawdź trzy tryby przy OFF.
-6. Powtórz kontrolę przy skalowaniu Windows 100%, 125%, 150% i 200%. Sprawdź polskie teksty, widoczność fokusu, obsługę klawiatury, kontrast lampek i brak uciętych wartości.
+3. Otwórz wykres. Stan ON/OFF musi pozostać wspólny, wykres ma zachować najwyżej 50 punktów, domyślnie pokazywać prąd i pozwalać włączyć drugą linię napięcia.
+4. Sprawdź całkowity prąd, całkowite napięcie i rezystancję zwarciową w oknie głównym oraz na wykresie.
+5. Zapisz osobno napięcie i prąd do CSV i sprawdź kolumny numeru próbki oraz czasu.
+6. Otwórz Dual, połącz dwa różne fikcyjne porty i sprawdź trzy tryby przy OFF.
+7. Powtórz kontrolę przy skalowaniu Windows 100%, 125%, 150% i 200%. Sprawdź polskie teksty, widoczność fokusu, obsługę klawiatury, kontrast lampek i brak uciętych wartości.
+
+### Wynik kontroli interfejsu v0.1.3 - 2026-09-27
+
+Wersję Release uruchomiono z argumentem `--demo` przy skalowaniu 100%. Sprawdzono okno Single, okno Dual oraz osobne okno wykresu. Potwierdzono krój Consolas bez pogrubienia, pola nastaw o wysokości 30 px, opisy limitów pod polami, stałe rozmiary okien głównych i brak uciętych wartości. W stanie Offline wszystkie kontrolki są ciemne. Po połączeniu przy OFF jednocześnie świecą żółta kontrolka połączenia i czerwona kontrolka wyjścia. Wykres domyślnie ma aktywny prąd i udostępnia osobne przełączniki prądu oraz napięcia.
 
 ### Wynik kontroli pierwszej wersji - 2026-09-25
 

@@ -14,21 +14,23 @@ public sealed class CurrentChart : FrameworkElement
 			typeof(IEnumerable<ChartPoint>),
 			typeof(CurrentChart),
 			new FrameworkPropertyMetadata(null,OnPointsChanged));
-
 	public static readonly DependencyProperty MinimumYProperty=
-		DependencyProperty.Register(
-			nameof(MinimumY),
-			typeof(double),
-			typeof(CurrentChart),
-			new FrameworkPropertyMetadata(0d,FrameworkPropertyMetadataOptions.AffectsRender));
-
+		RegisterRenderProperty(nameof(MinimumY),0d);
 	public static readonly DependencyProperty MaximumYProperty=
-		DependencyProperty.Register(
-			nameof(MaximumY),
-			typeof(double),
-			typeof(CurrentChart),
-			new FrameworkPropertyMetadata(1d,FrameworkPropertyMetadataOptions.AffectsRender));
+		RegisterRenderProperty(nameof(MaximumY),1d);
+	public static readonly DependencyProperty MinimumVoltageYProperty=
+		RegisterRenderProperty(nameof(MinimumVoltageY),0d);
+	public static readonly DependencyProperty MaximumVoltageYProperty=
+		RegisterRenderProperty(nameof(MaximumVoltageY),1d);
+	public static readonly DependencyProperty ShowCurrentProperty=
+		RegisterRenderProperty(nameof(ShowCurrent),true);
+	public static readonly DependencyProperty ShowVoltageProperty=
+		RegisterRenderProperty(nameof(ShowVoltage),false);
 
+	private static readonly Brush VoltageBrush=
+		new SolidColorBrush(Color.FromRgb(0,220,255));
+	private static readonly Brush CurrentBrush=
+		new SolidColorBrush(Color.FromRgb(0,255,80));
 	private INotifyCollectionChanged? observedCollection;
 
 	public IEnumerable<ChartPoint>? Points
@@ -49,14 +51,71 @@ public sealed class CurrentChart : FrameworkElement
 		set => SetValue(MaximumYProperty,value);
 	}
 
+	public double MinimumVoltageY
+	{
+		get => (double)GetValue(MinimumVoltageYProperty);
+		set => SetValue(MinimumVoltageYProperty,value);
+	}
+
+	public double MaximumVoltageY
+	{
+		get => (double)GetValue(MaximumVoltageYProperty);
+		set => SetValue(MaximumVoltageYProperty,value);
+	}
+
+	public bool ShowCurrent
+	{
+		get => (bool)GetValue(ShowCurrentProperty);
+		set => SetValue(ShowCurrentProperty,value);
+	}
+
+	public bool ShowVoltage
+	{
+		get => (bool)GetValue(ShowVoltageProperty);
+		set => SetValue(ShowVoltageProperty,value);
+	}
+
 	protected override void OnRender(DrawingContext drawingContext)
 	{
 		base.OnRender(drawingContext);
-		Rect area=new(40,8,Math.Max(0,ActualWidth-48),Math.Max(0,ActualHeight-28));
+		Rect area=new(48,8,Math.Max(0,ActualWidth-96),Math.Max(0,ActualHeight-28));
 		drawingContext.DrawRectangle(
 			new SolidColorBrush(Color.FromRgb(100,100,100)),
 			new Pen(Brushes.Black,1),
 			area);
+		DrawGrid(drawingContext,area);
+
+		ChartPoint[] points=Points?.ToArray() ?? [];
+		if(points.Length<2 || area.Width<=0 || area.Height<=0)
+		{
+			return;
+		}
+		if(ShowCurrent)
+		{
+			DrawSeries(
+				drawingContext,
+				area,
+				points,
+				point=>point.CurrentAmperes,
+				MinimumY,
+				MaximumY,
+				CurrentBrush);
+		}
+		if(ShowVoltage)
+		{
+			DrawSeries(
+				drawingContext,
+				area,
+				points,
+				point=>point.VoltageVolts,
+				MinimumVoltageY,
+				MaximumVoltageY,
+				VoltageBrush);
+		}
+	}
+
+	private void DrawGrid(DrawingContext drawingContext,Rect area)
+	{
 		Pen gridPen=new(new SolidColorBrush(Color.FromRgb(190,190,190)),0.7);
 		for(int index=0;index<=10;index++)
 		{
@@ -65,36 +124,70 @@ public sealed class CurrentChart : FrameworkElement
 				gridPen,
 				new Point(area.Left,y),
 				new Point(area.Right,y));
-			if(index%2 == 0)
+			if(index%2 != 0)
 			{
-				double value=MaximumY-((MaximumY-MinimumY)*index/10d);
-				FormattedText label=new(
-					value.ToString("0.0",CultureInfo.InvariantCulture),
-					CultureInfo.InvariantCulture,
-					FlowDirection.LeftToRight,
-					new Typeface("Consolas"),
-					10,
-					Brushes.White,
-					VisualTreeHelper.GetDpi(this).PixelsPerDip);
-				drawingContext.DrawText(
-					label,
-					new Point(Math.Max(0,area.Left-label.Width-4),y-label.Height/2));
+				continue;
+			}
+			if(ShowCurrent)
+			{
+				double current=MaximumY-((MaximumY-MinimumY)*index/10d);
+				DrawLabel(
+					drawingContext,
+					current.ToString("0.0",CultureInfo.InvariantCulture),
+					CurrentBrush,
+					new Point(area.Left-4,y),
+					true);
+			}
+			if(ShowVoltage)
+			{
+				double voltage=MaximumVoltageY-
+					((MaximumVoltageY-MinimumVoltageY)*index/10d);
+				DrawLabel(
+					drawingContext,
+					voltage.ToString("0.0",CultureInfo.InvariantCulture),
+					VoltageBrush,
+					new Point(area.Right+4,y),
+					false);
 			}
 		}
+	}
 
-		ChartPoint[] points=Points?.ToArray() ?? [];
-		if(points.Length<2 || area.Width<=0 || area.Height<=0)
-		{
-			return;
-		}
-		double range=Math.Max(0.000001,MaximumY-MinimumY);
+	private void DrawLabel(
+		DrawingContext drawingContext,
+		string value,
+		Brush brush,
+		Point anchor,
+		bool alignRight)
+	{
+		FormattedText label=new(
+			value,
+			CultureInfo.InvariantCulture,
+			FlowDirection.LeftToRight,
+			new Typeface("Consolas"),
+			10,
+			brush,
+			VisualTreeHelper.GetDpi(this).PixelsPerDip);
+		double x=alignRight ? Math.Max(0,anchor.X-label.Width) : anchor.X;
+		drawingContext.DrawText(label,new Point(x,anchor.Y-label.Height/2));
+	}
+
+	private static void DrawSeries(
+		DrawingContext drawingContext,
+		Rect area,
+		IReadOnlyList<ChartPoint> points,
+		Func<ChartPoint,double> selector,
+		double minimum,
+		double maximum,
+		Brush brush)
+	{
+		double range=Math.Max(0.000001,maximum-minimum);
 		StreamGeometry geometry=new();
 		using(StreamGeometryContext context=geometry.Open())
 		{
-			for(int index=0;index<points.Length;index++)
+			for(int index=0;index<points.Count;index++)
 			{
-				double x=area.Left+(area.Width*index/(points.Length-1d));
-				double normalized=(points[index].Value-MinimumY)/range;
+				double x=area.Left+(area.Width*index/(points.Count-1d));
+				double normalized=(selector(points[index])-minimum)/range;
 				double y=area.Bottom-(Math.Clamp(normalized,0,1)*area.Height);
 				Point point=new(x,y);
 				if(index == 0)
@@ -108,10 +201,20 @@ public sealed class CurrentChart : FrameworkElement
 			}
 		}
 		geometry.Freeze();
-		drawingContext.DrawGeometry(
-			null,
-			new Pen(new SolidColorBrush(Color.FromRgb(0,230,90)),2),
-			geometry);
+		drawingContext.DrawGeometry(null,new Pen(brush,2),geometry);
+	}
+
+	private static DependencyProperty RegisterRenderProperty(
+		string name,
+		object defaultValue)
+	{
+		return DependencyProperty.Register(
+			name,
+			defaultValue.GetType(),
+			typeof(CurrentChart),
+			new FrameworkPropertyMetadata(
+				defaultValue,
+				FrameworkPropertyMetadataOptions.AffectsRender));
 	}
 
 	private static void OnPointsChanged(

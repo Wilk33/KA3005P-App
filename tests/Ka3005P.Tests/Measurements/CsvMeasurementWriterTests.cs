@@ -25,7 +25,7 @@ public sealed class CsvMeasurementWriterTests
 				CancellationToken.None);
 
 			Assert.Equal(
-				"Time;Voltage;\n[s];[V];\n0.150;12.34;\n",
+				"Sample;Time;Voltage;\n[-];[s];[V];\n0;0.150;12.34;\n",
 				output.ToString());
 		}
 		finally
@@ -56,7 +56,7 @@ public sealed class CsvMeasurementWriterTests
 			CancellationToken.None);
 
 		Assert.Equal(
-			"Time;Voltage -;Voltage +;\n[s];[V];[V];\n1.000;-12.00;11.00;\n",
+			"Sample;Time;Voltage -;Voltage +;\n[-];[s];[V];[V];\n0;1.000;-12.00;11.00;\n",
 			output.ToString());
 	}
 
@@ -72,6 +72,24 @@ public sealed class CsvMeasurementWriterTests
 			MeasurementExportKind.Voltage,
 			CancellationToken.None);
 
-		Assert.Equal("2.000;;;;\n",output.ToString());
+		Assert.Equal("0;2.000;;;;\n",output.ToString());
+	}
+
+	[Fact]
+	public async Task WriteAsync_IncrementsSampleMarkerAcrossRows()
+	{
+		StringWriter output=new();
+		CsvMeasurementWriter writer=new(output);
+
+		await writer.WriteAsync(
+			new MeasurementSample(TimeSpan.Zero,100,100),
+			MeasurementExportKind.Current,
+			CancellationToken.None);
+		await writer.WriteAsync(
+			new MeasurementSample(TimeSpan.FromMilliseconds(100),200,200),
+			MeasurementExportKind.Current,
+			CancellationToken.None);
+
+		Assert.Equal("0;0.000;0.100;\n1;0.100;0.200;\n",output.ToString());
 	}
 }

@@ -236,6 +236,21 @@ public sealed class DualSupplyViewModelTests
 		Assert.Equal("0,400 A",viewModel.MeasuredCurrentText);
 		Assert.Equal("12,00 V / 0,400 A",viewModel.FirstMeasurementText);
 		Assert.Equal("11,00 V / 0,350 A",viewModel.SecondMeasurementText);
+		Assert.False(viewModel.IsResistanceVisible);
+	}
+
+	[Fact]
+	public void Measurements_AtCurrentLimitShowTotalShortCircuitResistance()
+	{
+		(DualSupplyViewModel viewModel,FakePowerSupplySession first,FakePowerSupplySession second)=
+			CreateViewModel();
+		viewModel.Mode=DualMode.Series;
+
+		first.PublishMeasurement(new MeasurementSample(TimeSpan.Zero,5,1000));
+		second.PublishMeasurement(new MeasurementSample(TimeSpan.Zero,5,1000));
+
+		Assert.True(viewModel.IsResistanceVisible);
+		Assert.Equal("100 mΩ",viewModel.ResistanceText);
 	}
 
 	[Fact]

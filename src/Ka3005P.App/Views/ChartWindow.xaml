@@ -13,6 +13,10 @@
 	WindowStartupLocation="CenterOwner">
 	<DockPanel>
 		<Menu DockPanel.Dock="Top">
+			<MenuItem Header="Widok">
+				<MenuItem Header="Prąd" IsCheckable="True" IsChecked="{Binding ShowCurrent,Mode=TwoWay}" />
+				<MenuItem Header="Napięcie" IsCheckable="True" IsChecked="{Binding ShowVoltage,Mode=TwoWay}" />
+			</MenuItem>
 			<MenuItem Header="Zapisz jako">
 				<MenuItem Header="Napięcie CSV" Command="{Binding SaveVoltageCommand}" />
 				<MenuItem Header="Prąd CSV" Command="{Binding SaveCurrentCommand}" />
@@ -26,22 +30,28 @@
 			</Grid.RowDefinitions>
 			<Grid>
 				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto" />
 					<ColumnDefinition Width="*" />
 					<ColumnDefinition Width="Auto" />
 					<ColumnDefinition Width="Auto" />
 				</Grid.ColumnDefinitions>
 				<controls:StatusLamps
-					IsOffline="{Binding IsOffline}"
+					IsOnline="{Binding IsOnline}"
 					IsOff="{Binding IsOff}"
 					IsOn="{Binding IsOn}" />
+				<StackPanel Grid.Column="1" Margin="12,0" Orientation="Horizontal" VerticalAlignment="Center">
+					<TextBlock Margin="0,0,14,0" FontFamily="Consolas" FontSize="22" Text="{Binding CurrentText}" />
+					<TextBlock FontFamily="Consolas" FontSize="22" Foreground="#FF00DCFF" Text="{Binding VoltageText}" />
+				</StackPanel>
 				<TextBlock
-					Grid.Column="1"
-					Margin="12,4"
-					FontFamily="Consolas"
-					FontSize="24"
-					Text="PRĄD [A]" />
-				<Button
 					Grid.Column="2"
+					Margin="8,0"
+					VerticalAlignment="Center"
+					FontFamily="Consolas"
+					FontSize="17"
+					Text="{Binding ResistanceText}" />
+				<Button
+					Grid.Column="3"
 					Width="72"
 					Command="{Binding ToggleOutputCommand}"
 					Content="{Binding OutputButtonText}" />
@@ -51,6 +61,10 @@
 				Margin="0,12,0,8"
 				MinimumY="{Binding MinimumY}"
 				MaximumY="{Binding MaximumY}"
+				MinimumVoltageY="{Binding MinimumVoltageY}"
+				MaximumVoltageY="{Binding MaximumVoltageY}"
+				ShowCurrent="{Binding ShowCurrent}"
+				ShowVoltage="{Binding ShowVoltage}"
 				Points="{Binding Points}" />
 			<TextBlock
 				Grid.Row="2"

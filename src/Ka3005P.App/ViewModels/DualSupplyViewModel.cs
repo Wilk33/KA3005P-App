@@ -37,11 +37,13 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 	private string measuredCurrentText="0,000 A";
 	private string firstMeasurementText="0,00 V / 0,000 A";
 	private string secondMeasurementText="0,00 V / 0,000 A";
+	private string? resistanceText;
 	private string? errorMessage;
 	private int voltageHundredths=1200;
 	private int currentThousandths=1000;
 	private bool isConnected;
 	private bool isOutputOn;
+	private bool isResistanceVisible;
 	private bool setpointsAreValid=true;
 	private bool closing;
 	private int faultCleanupScheduled;
@@ -113,6 +115,8 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 			OnPropertyChanged();
 			OnPropertyChanged(nameof(MaximumVoltageText));
 			OnPropertyChanged(nameof(MaximumCurrentText));
+			OnPropertyChanged(nameof(MaximumVoltageDescription));
+			OnPropertyChanged(nameof(MaximumCurrentDescription));
 			ValidateSetpoints();
 			if(SetpointsAreValid)
 			{
@@ -193,6 +197,12 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 		Mode == DualMode.Series ? "62,00" : "31,00";
 	public string MaximumCurrentText =>
 		Mode == DualMode.Parallel ? "10,200" : "5,100";
+	public string MaximumVoltageDescription =>
+		"Max napięcie zasilacza to "+
+		(Mode == DualMode.Series ? "62V" : "31V");
+	public string MaximumCurrentDescription =>
+		"Max prąd zasilacza to "+
+		(Mode == DualMode.Parallel ? "10,2A" : "5,1A");
 
 	public bool SetpointsAreValid
 	{
@@ -358,6 +368,18 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 	{
 		get => secondMeasurementText;
 		private set => SetProperty(ref secondMeasurementText,value);
+	}
+
+	public string? ResistanceText
+	{
+		get => resistanceText;
+		private set => SetProperty(ref resistanceText,value);
+	}
+
+	public bool IsResistanceVisible
+	{
+		get => isResistanceVisible;
+		private set => SetProperty(ref isResistanceVisible,value);
 	}
 
 	public string FirstPhysicalSetpointText { get; private set; }=string.Empty;
@@ -773,12 +795,31 @@ public sealed class DualSupplyViewModel : ObservableObject,ISupplyModeViewModel
 			SecondMeasurementText=
 				FormatVoltage(value.Second.VoltageHundredths)+" / "+
 				FormatCurrent(value.Second.CurrentThousandths);
+			bool isCurrentLimited=
+				Math.Abs(value.CurrentThousandths-currentThousandths)<=10;
+			if(isCurrentLimited && ResistanceFormatter.TryFormat(
+				value.VoltageHundredths,
+				value.CurrentThousandths,
+				out string? resistance))
+			{
+				ResistanceText=resistance;
+				IsResistanceVisible=true;
+			}
+			else
+			{
+				ResistanceText=null;
+				IsResistanceVisible=false;
+			}
 			TimeSpan elapsed=value.First.Elapsed >= value.Second.Elapsed
 				? value.First.Elapsed
 				: value.Second.Elapsed;
 			ChartSampleReceived?.Invoke(
 				this,
-				new ChartSample(elapsed,value.CurrentThousandths/1000d));
+				new ChartSample(
+					elapsed,
+					value.VoltageHundredths,
+					value.CurrentThousandths,
+					isCurrentLimited));
 		});
 	}
 

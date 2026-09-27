@@ -140,6 +140,19 @@ public sealed class SingleSupplyViewModelTests
 	}
 
 	[Fact]
+	public void Measurement_BelowCurrentLimitHidesShortCircuitResistance()
+	{
+		FakePowerSupplySession session=new();
+		SingleSupplyViewModel viewModel=new(session);
+
+		session.PublishMeasurement(
+			new MeasurementSample(TimeSpan.Zero,1200,500));
+
+		Assert.False(viewModel.IsResistanceVisible);
+		Assert.Null(viewModel.ResistanceText);
+	}
+
+	[Fact]
 	public async Task Connect_SendsDisplayedSetpoints()
 	{
 		FakeSingleSessionFactory factory=new();

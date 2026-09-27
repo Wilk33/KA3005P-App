@@ -11,7 +11,11 @@ public interface IOutputController
 	ValueTask SetOutputAsync(bool enabled,CancellationToken cancellationToken);
 }
 
-public readonly record struct ChartSample(TimeSpan Elapsed,double CurrentAmperes);
+public readonly record struct ChartSample(
+	TimeSpan Elapsed,
+	int VoltageHundredths,
+	int CurrentThousandths,
+	bool IsCurrentLimited);
 
 public interface IChartSampleSource
 {

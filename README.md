@@ -4,7 +4,7 @@ Natywna aplikacja Windows do obsługi zasilaczy Korad KA3005P, zachowująca funk
 
 ## Stan projektu
 
-Pierwsza wersja obejmuje pojedynczy zasilacz oraz Dual Korad w trybie szeregowym, równoległym i symetrycznym. Tryb wybiera się w jednym, kompaktowym oknie głównym. Aplikacja ma wykres prądu, eksport CSV, obliczanie rezystancji, blokadę współdzielenia portów i tryb demonstracyjny bez sprzętu.
+Pierwsza wersja obejmuje pojedynczy zasilacz oraz Dual Korad w trybie szeregowym, równoległym i symetrycznym. Tryb wybiera się w jednym, kompaktowym oknie głównym. Aplikacja ma wykres prądu z opcjonalną drugą linią napięcia, eksport CSV, obliczanie rezystancji zwarciowej, blokadę współdzielenia portów i tryb demonstracyjny bez sprzętu.
 
 Projekt używa C#, WPF i .NET 10. Projekt techniczny, w tym rozwiązanie problemu lagów podczas zmiany nastaw, znajduje się w [specyfikacji](docs/superpowers/specs/2026-09-24-ka3005p-app-design.md).
 
@@ -66,14 +66,14 @@ Wybór trybu w aplikacji nie przełącza przewodów. Przed włączeniem wyjścia
 
 ## Eksport
 
-Menu `Zapisz jako` zapisuje napięcie albo prąd do pliku CSV z czasem od początku sesji. Układ kolumn odpowiada wybranemu trybowi. Pliki używają kropki dziesiętnej, średnika jako separatora i jednostek w drugim wierszu.
+Menu `Zapisz jako` zapisuje napięcie albo prąd do pliku CSV z numerem próbki i czasem od początku sesji. Układ kolumn odpowiada wybranemu trybowi. Pliki używają kropki dziesiętnej, średnika jako separatora i jednostek w drugim wierszu.
 
 ## Zakres referencyjny
 
 - Pojedynczy zasilacz i tryb Dual przełączane w jednym oknie głównym.
 - Dual Korad: tryb szeregowy, równoległy i symetryczny.
 - Porty COM, nastawy napięcia i prądu, ON/OFF, pomiary i sygnalizacja stanu.
-- Osobne okno wykresu prądu, obliczanie rezystancji, eksport CSV.
+- Osobne okno wykresu z domyślną linią prądu i opcjonalną linią napięcia, całkowitymi wartościami liczbowymi, obliczaniem rezystancji zwarciowej i eksportem CSV.
 - Automatycznie odświeżane listy aktywnych portów COM z blokadą powtórnego wyboru portu w Dual.
 - Kompaktowe szare okna, jasne cyfry Consolas i oryginalne ikony.
 

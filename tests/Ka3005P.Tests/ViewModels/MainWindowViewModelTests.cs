@@ -22,7 +22,7 @@ public sealed class MainWindowViewModelTests
 		Assert.True(viewModel.IsSingleSelected);
 		Assert.False(viewModel.IsDualSelected);
 		Assert.Equal(300,viewModel.WindowWidth);
-		Assert.Equal(390,viewModel.WindowHeight);
+		Assert.Equal(360,viewModel.WindowHeight);
 	}
 
 	[Fact]
@@ -42,7 +42,7 @@ public sealed class MainWindowViewModelTests
 		Assert.Equal(ApplicationMode.Dual,viewModel.SelectedMode);
 		Assert.False(viewModel.CurrentMode.IsConnected);
 		Assert.Equal(380,viewModel.WindowWidth);
-		Assert.Equal(500,viewModel.WindowHeight);
+		Assert.Equal(460,viewModel.WindowHeight);
 	}
 
 	private sealed class FakeModeFactory : ISupplyModeFactory

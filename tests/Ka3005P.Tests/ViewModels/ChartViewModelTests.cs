@@ -19,8 +19,8 @@ public sealed class ChartViewModelTests
 		}
 
 		Assert.Equal(50,viewModel.Points.Count);
-		Assert.Equal(10,viewModel.Points[0].Value);
-		Assert.Equal(59,viewModel.Points[^1].Value);
+		Assert.Equal(10,viewModel.Points[0].CurrentAmperes);
+		Assert.Equal(59,viewModel.Points[^1].CurrentAmperes);
 		Assert.Equal(9.5,viewModel.MinimumY);
 		Assert.Equal(59.5,viewModel.MaximumY);
 	}
@@ -74,16 +74,41 @@ public sealed class ChartViewModelTests
 		using ChartViewModel chart=new(output);
 
 		Assert.False(chart.ToggleOutputCommand.CanExecute(null));
-		Assert.True(chart.IsOffline);
+		Assert.False(chart.IsOnline);
 		Assert.False(chart.IsOff);
 		Assert.False(chart.IsOn);
 		output.SetConnected(true);
 		Assert.True(chart.ToggleOutputCommand.CanExecute(null));
+		Assert.True(chart.IsOnline);
 		Assert.True(chart.IsOff);
 		output.SetConnected(false);
 		Assert.False(chart.ToggleOutputCommand.CanExecute(null));
-		Assert.True(chart.IsOffline);
+		Assert.False(chart.IsOnline);
 		Assert.False(chart.IsOff);
+	}
+
+	[Fact]
+	public void Measurement_UpdatesTotalValuesResistanceAndBothSeries()
+	{
+		FakeOutputController output=new();
+		FakeChartSampleSource source=new();
+		using ChartViewModel chart=new(output,source,null,null);
+
+		source.Publish(new ChartSample(
+			TimeSpan.FromSeconds(1),
+			10,
+			1000,
+			true));
+
+		ChartPoint point=Assert.Single(chart.Points);
+		Assert.Equal(0.1,point.VoltageVolts);
+		Assert.Equal(1,point.CurrentAmperes);
+		Assert.Equal("0,10 V",chart.VoltageText);
+		Assert.Equal("1,000 A",chart.CurrentText);
+		Assert.Equal("100 mΩ",chart.ResistanceText);
+		Assert.True(chart.IsResistanceVisible);
+		Assert.True(chart.ShowCurrent);
+		Assert.False(chart.ShowVoltage);
 	}
 
 	private sealed class FakeOutputController : IOutputController
@@ -104,6 +129,16 @@ public sealed class ChartViewModelTests
 			IsOutputOn=enabled;
 			OutputStateChanged?.Invoke(this,enabled);
 			return ValueTask.CompletedTask;
+		}
+	}
+
+	private sealed class FakeChartSampleSource : IChartSampleSource
+	{
+		public event EventHandler<ChartSample>? ChartSampleReceived;
+
+		public void Publish(ChartSample sample)
+		{
+			ChartSampleReceived?.Invoke(this,sample);
 		}
 	}
 }

@@ -31,6 +31,7 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 	private string measuredCurrentText="0,000 A";
 	private string? resistanceText;
 	private string? errorMessage;
+	private int currentThousandths=1000;
 	private bool isConnected;
 	private bool isOutputOn;
 	private bool isResistanceVisible;
@@ -452,6 +453,7 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 	private void ApplyCurrent(int thousandths)
 	{
 		CurrentSetpoint value=CurrentSetpoint.FromThousandths(thousandths);
+		currentThousandths=value.Thousandths;
 		CurrentText=(value.Thousandths/1000m).ToString("0.000",PolishCulture);
 		ClearValidationError();
 		session?.RequestCurrent(value);
@@ -545,7 +547,9 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 			.ToString("0.00",PolishCulture)+" V";
 		MeasuredCurrentText=(sample.CurrentThousandths/1000m)
 			.ToString("0.000",PolishCulture)+" A";
-		if(ResistanceFormatter.TryFormat(
+		bool isCurrentLimited=
+			Math.Abs(sample.CurrentThousandths-currentThousandths)<=10;
+		if(isCurrentLimited && ResistanceFormatter.TryFormat(
 			sample.VoltageHundredths,
 			sample.CurrentThousandths,
 			out string? resistance))
@@ -562,7 +566,9 @@ public sealed class SingleSupplyViewModel : ObservableObject,ISupplyModeViewMode
 			this,
 			new ChartSample(
 				sample.Elapsed,
-				sample.CurrentThousandths/1000d));
+				sample.VoltageHundredths,
+				sample.CurrentThousandths,
+				isCurrentLimited));
 	}
 
 	private void Dispatch(Action action)
