@@ -8,6 +8,7 @@ public partial class ChartWindow : Window
 	public ChartWindow()
 	{
 		InitializeComponent();
+		Title="Wykres - "+AppInformation.DisplayName;
 	}
 
 	protected override void OnClosed(EventArgs eventArgs)

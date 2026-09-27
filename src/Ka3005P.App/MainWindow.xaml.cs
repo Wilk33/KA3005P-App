@@ -74,6 +74,24 @@ public partial class MainWindow : Window
 		await SaveAsync(MeasurementExportKind.Current);
 	}
 
+	private void OpenAuthorClick(object sender,RoutedEventArgs eventArgs)
+	{
+		AuthorWindow window=new()
+		{
+			Owner=this
+		};
+		window.ShowDialog();
+	}
+
+	private void OpenLicenseClick(object sender,RoutedEventArgs eventArgs)
+	{
+		LicenseWindow window=new()
+		{
+			Owner=this
+		};
+		window.ShowDialog();
+	}
+
 	private async Task SaveAsync(MeasurementExportKind kind)
 	{
 		if(DataContext is not MainWindowViewModel viewModel)

@@ -10,7 +10,7 @@
 			<ColumnDefinition Width="34" />
 		</Grid.ColumnDefinitions>
 		<Grid.RowDefinitions>
-			<RowDefinition Height="30" />
+			<RowDefinition Height="42" />
 			<RowDefinition Height="Auto" />
 		</Grid.RowDefinitions>
 		<TextBlock
@@ -20,7 +20,7 @@
 			FontFamily="Consolas"
 			FontSize="12"
 			Text="{Binding Label,ElementName=Root}" />
-		<DockPanel Grid.Row="0">
+		<DockPanel Grid.Row="0" Height="30" VerticalAlignment="Center">
 			<TextBlock
 				DockPanel.Dock="Right"
 				Margin="4,0"
@@ -37,16 +37,17 @@
 				PreviewKeyDown="TextBoxPreviewKeyDown"
 				Text="{Binding Text,ElementName=Root,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" />
 		</DockPanel>
-		<Grid Grid.Row="0" Grid.Column="1" Height="30">
+		<Grid Grid.Row="0" Grid.Column="1" Height="42" VerticalAlignment="Center">
 			<Grid.RowDefinitions>
-				<RowDefinition />
-				<RowDefinition />
+				<RowDefinition Height="21" />
+				<RowDefinition Height="21" />
 			</Grid.RowDefinitions>
 			<RepeatButton
 				Grid.Row="0"
 				Margin="2,0,0,1"
 				Padding="0"
 				MinHeight="0"
+				FontSize="11"
 				Delay="350"
 				Interval="60"
 				Command="{Binding IncrementCommand,ElementName=Root}"
@@ -56,6 +57,7 @@
 				Margin="2,1,0,0"
 				Padding="0"
 				MinHeight="0"
+				FontSize="11"
 				Delay="350"
 				Interval="60"
 				Command="{Binding DecrementCommand,ElementName=Root}"

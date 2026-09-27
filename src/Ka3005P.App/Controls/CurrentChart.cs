@@ -28,9 +28,9 @@ public sealed class CurrentChart : FrameworkElement
 		RegisterRenderProperty(nameof(ShowVoltage),false);
 
 	private static readonly Brush VoltageBrush=
-		new SolidColorBrush(Color.FromRgb(0,220,255));
+		new SolidColorBrush(Color.FromRgb(0,255,0));
 	private static readonly Brush CurrentBrush=
-		new SolidColorBrush(Color.FromRgb(0,255,80));
+		new SolidColorBrush(Color.FromRgb(255,32,32));
 	private INotifyCollectionChanged? observedCollection;
 
 	public IEnumerable<ChartPoint>? Points

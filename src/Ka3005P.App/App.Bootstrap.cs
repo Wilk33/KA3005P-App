@@ -39,7 +39,7 @@ public partial class App
 		MainWindow window=new()
 		{
 			DataContext=viewModel,
-			Title=demoMode ? "Korad - DEMO" : "Korad"
+			Title=AppInformation.GetWindowTitle(demoMode)
 		};
 		MainWindow=window;
 		window.Show();

@@ -1,11 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <Resource Include="Assets/KA3005P.ico" />
+    <Resource Include="Assets/KoradS.ico" />
     <ProjectReference Include="../Ka3005P.Core/Ka3005P.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="../../LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+	<EmbeddedResource Include="../../LICENSE" LogicalName="Ka3005P.LICENSE" />
     <Content Include="../../assets/reference/KoradS150.png" Link="ReferenceAssets/KoradS150.png" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../assets/reference/KoradD150.png" Link="ReferenceAssets/KoradD150.png" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../assets/reference/KoradM150.png" Link="ReferenceAssets/KoradM150.png" CopyToPublishDirectory="PreserveNewest" />
@@ -16,8 +17,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <ApplicationIcon>Assets/KA3005P.ico</ApplicationIcon>
-	<Version>0.1.3</Version>
+    <ApplicationIcon>Assets/KoradS.ico</ApplicationIcon>
+	<Version>0.1.4</Version>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

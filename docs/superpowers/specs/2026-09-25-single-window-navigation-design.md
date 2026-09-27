@@ -123,7 +123,7 @@ Do repozytorium zostanie skopiowany istniejący `Korad Manager_Icon.ico` z proje
 Plik projektu ustawia:
 
 ```xml
-<ApplicationIcon>Assets\KA3005P.ico</ApplicationIcon>
+<ApplicationIcon>Assets\KoradS.ico</ApplicationIcon>
 ```
 
 `MainWindow` i `ChartWindow` używają tej samej ikony. Ikona jest osadzona w EXE i widoczna na pasku zadań, pasku tytułu oraz w Eksploratorze Windows.

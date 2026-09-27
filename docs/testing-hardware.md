@@ -28,11 +28,17 @@ Sprawdź kolejno:
 
 1. Otwórz pojedynczy Korad, wybierz `Offline`, ustaw 12,00 V i 1,000 A, a następnie ON.
 2. Zmieniaj napięcie i prąd podczas ON. Edytory i okno muszą reagować natychmiast.
-3. Otwórz wykres. Stan ON/OFF musi pozostać wspólny, wykres ma zachować najwyżej 50 punktów, domyślnie pokazywać prąd i pozwalać włączyć drugą linię napięcia.
+3. Otwórz wykres. Stan ON/OFF musi pozostać wspólny, wykres ma zachować najwyżej 50 punktów, domyślnie pokazywać czerwony prąd i pozwalać włączyć drugą, zieloną linię napięcia.
 4. Sprawdź całkowity prąd, całkowite napięcie i rezystancję zwarciową w oknie głównym oraz na wykresie.
 5. Zapisz osobno napięcie i prąd do CSV i sprawdź kolumny numeru próbki oraz czasu.
 6. Otwórz Dual, połącz dwa różne fikcyjne porty i sprawdź trzy tryby przy OFF.
 7. Powtórz kontrolę przy skalowaniu Windows 100%, 125%, 150% i 200%. Sprawdź polskie teksty, widoczność fokusu, obsługę klawiatury, kontrast lampek i brak uciętych wartości.
+8. Sprawdź, że pole nastawy ma 30 px wysokości i jest wyśrodkowane obok niezależnego stosu dwóch pełnych przycisków strzałek.
+9. Otwórz z menu `O aplikacji` osobno okno autora i licencji oraz sprawdź wersję w tytułach okien.
+
+### Wynik kontroli interfejsu v0.1.4 - 2026-09-27
+
+Wersję Release uruchomiono z argumentem `--demo` przy skalowaniu 100%. Potwierdzono tytuł `Korad v0.1.4 - DEMO`, ikonę utworzoną z `KoradS150.png`, pola nastaw o wysokości 30 px wyśrodkowane względem niezależnych stosów przycisków o wysokości 42 px oraz nieucięte symbole strzałek. W oknie wykresu potwierdzono czerwony tekst i linię prądu oraz zielony tekst i linię napięcia. Testy automatyczne potwierdzają treść autora, wersję tytułu i dostępność pełnej licencji osadzonej w aplikacji.
 
 ### Wynik kontroli interfejsu v0.1.3 - 2026-09-27
 

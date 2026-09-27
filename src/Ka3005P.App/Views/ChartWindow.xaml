@@ -4,6 +4,7 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:controls="clr-namespace:Ka3005P.App.Controls"
 	Title="Wykres"
+	Icon="/Ka3005P.App;component/Assets/KoradS.ico"
 	Background="{StaticResource KoradBackgroundBrush}"
 	Foreground="{StaticResource KoradTextBrush}"
 	Width="650"
@@ -40,8 +41,8 @@
 					IsOff="{Binding IsOff}"
 					IsOn="{Binding IsOn}" />
 				<StackPanel Grid.Column="1" Margin="12,0" Orientation="Horizontal" VerticalAlignment="Center">
-					<TextBlock Margin="0,0,14,0" FontFamily="Consolas" FontSize="22" Text="{Binding CurrentText}" />
-					<TextBlock FontFamily="Consolas" FontSize="22" Foreground="#FF00DCFF" Text="{Binding VoltageText}" />
+					<TextBlock Margin="0,0,14,0" FontFamily="Consolas" FontSize="22" Foreground="#FFFF2020" Text="{Binding CurrentText}" />
+					<TextBlock FontFamily="Consolas" FontSize="22" Foreground="#FF00FF00" Text="{Binding VoltageText}" />
 				</StackPanel>
 				<TextBlock
 					Grid.Column="2"

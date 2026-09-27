@@ -4,7 +4,7 @@ Natywna aplikacja Windows do obsługi zasilaczy Korad KA3005P, zachowująca funk
 
 ## Stan projektu
 
-Pierwsza wersja obejmuje pojedynczy zasilacz oraz Dual Korad w trybie szeregowym, równoległym i symetrycznym. Tryb wybiera się w jednym, kompaktowym oknie głównym. Aplikacja ma wykres prądu z opcjonalną drugą linią napięcia, eksport CSV, obliczanie rezystancji zwarciowej, blokadę współdzielenia portów i tryb demonstracyjny bez sprzętu.
+Pierwsza wersja obejmuje pojedynczy zasilacz oraz Dual Korad w trybie szeregowym, równoległym i symetrycznym. Tryb wybiera się w jednym, kompaktowym oknie głównym. Aplikacja ma czerwony wykres prądu z opcjonalną zieloną linią napięcia, eksport CSV, obliczanie rezystancji zwarciowej, blokadę współdzielenia portów i tryb demonstracyjny bez sprzętu.
 
 Projekt używa C#, WPF i .NET 10. Projekt techniczny, w tym rozwiązanie problemu lagów podczas zmiany nastaw, znajduje się w [specyfikacji](docs/superpowers/specs/2026-09-24-ka3005p-app-design.md).
 
@@ -25,6 +25,8 @@ Ka3005P.App.exe --demo
 ```
 
 W demo można przełączać tryb pojedynczy i Dual, połączyć fikcyjne porty, zmieniać nastawy, używać ON/OFF, obserwować pomiary, wykres i eksport CSV. Pomiar przy OFF wynosi 0 V i 0 A, nawet jeśli nastawa pozostaje zapisana.
+
+Tytuł każdego okna zawiera wersję aplikacji. Menu `O aplikacji` otwiera osobne okno danych autora albo pełnego tekstu licencji PolyForm Noncommercial License 1.0.0. Ikona programu pochodzi z referencyjnej grafiki `KoradS150.png`.
 
 ## Budowanie i testy
 
