@@ -48,12 +48,28 @@
 			<controls:StatusLamps IsOnline="{Binding IsConnected}" IsOff="{Binding IsOff}" IsOn="{Binding IsOn}" />
 			<Button Grid.Column="1" Width="72" Command="{Binding ToggleOutputCommand}" Content="{Binding OutputButtonText}" />
 		</Grid>
-		<TextBlock Grid.Row="4" Margin="0,12,0,0" HorizontalAlignment="Right"
-			Style="{StaticResource ValueTextStyle}" Text="{Binding MeasuredVoltageText}" />
-		<TextBlock Grid.Row="5" HorizontalAlignment="Right"
-			Style="{StaticResource ValueTextStyle}" Text="{Binding MeasuredCurrentText}" />
-		<TextBlock Grid.Row="6" HorizontalAlignment="Right" FontFamily="Consolas" FontSize="17"
-			Text="{Binding ResistanceText}" />
+		<Grid Grid.Row="4" Grid.RowSpan="3">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*" />
+				<ColumnDefinition Width="Auto" />
+			</Grid.ColumnDefinitions>
+			<TextBlock
+				HorizontalAlignment="Left"
+				VerticalAlignment="Center"
+				FontFamily="Consolas"
+				FontSize="17"
+				Text="{Binding ResistanceText}" />
+			<StackPanel Grid.Column="1">
+				<TextBlock
+					HorizontalAlignment="Right"
+					Style="{StaticResource ValueTextStyle}"
+					Text="{Binding MeasuredVoltageText}" />
+				<TextBlock
+					HorizontalAlignment="Right"
+					Style="{StaticResource ValueTextStyle}"
+					Text="{Binding MeasuredCurrentText}" />
+			</StackPanel>
+		</Grid>
 		<TextBlock Grid.Row="7" Foreground="#FFFFA0A0" TextWrapping="Wrap" Text="{Binding ErrorMessage}" />
 	</Grid>
 </UserControl>

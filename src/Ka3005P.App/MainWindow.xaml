@@ -44,6 +44,7 @@
 			<MenuItem Header="Zapisz jako">
 				<MenuItem Header="Napięcie CSV" Click="SaveVoltageClick" />
 				<MenuItem Header="Prąd CSV" Click="SaveCurrentClick" />
+				<MenuItem Header="Napięcie i prąd CSV" Click="SaveVoltageAndCurrentClick" />
 			</MenuItem>
 			<MenuItem Header="O aplikacji">
 				<MenuItem Header="Autor" Click="OpenAuthorClick" />

@@ -16,6 +16,7 @@ public sealed class PowerSupplySession : IPowerSupplySession
 	private SessionSnapshot snapshot=new();
 	private Task? runTask;
 	private Task? pollingTask;
+	private long sessionStartedTimestamp;
 	private bool disposed;
 
 	public PowerSupplySession(IPowerSupplyDevice device,TimeProvider timeProvider)
@@ -76,6 +77,7 @@ public sealed class PowerSupplySession : IPowerSupplySession
 				throw new InvalidOperationException("Sesja została już uruchomiona.");
 			}
 
+			sessionStartedTimestamp=timeProvider.GetTimestamp();
 			runTask=RunAsync();
 			pollingTask=PollMeasurementsAsync(lifetime.Token);
 		}
@@ -251,7 +253,10 @@ public sealed class PowerSupplySession : IPowerSupplySession
 							recordedAt,
 							timestamp,
 							measurement.VoltageHundredths,
-							measurement.CurrentThousandths));
+							measurement.CurrentThousandths,
+							timeProvider.GetElapsedTime(
+								sessionStartedTimestamp,
+								timestamp)));
 					measurementRequest.Completion.TrySetResult();
 					break;
 				default:

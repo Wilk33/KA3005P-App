@@ -31,6 +31,7 @@ public sealed class CurrentChart : FrameworkElement
 		new SolidColorBrush(Color.FromRgb(0,255,0));
 	private static readonly Brush CurrentBrush=
 		new SolidColorBrush(Color.FromRgb(255,32,32));
+	private static readonly Brush AxisTextBrush=Brushes.White;
 	private INotifyCollectionChanged? observedCollection;
 
 	public IEnumerable<ChartPoint>? Points
@@ -134,7 +135,7 @@ public sealed class CurrentChart : FrameworkElement
 				DrawLabel(
 					drawingContext,
 					current.ToString("0.0",CultureInfo.InvariantCulture),
-					CurrentBrush,
+					AxisTextBrush,
 					new Point(area.Left-4,y),
 					true);
 			}
@@ -145,7 +146,7 @@ public sealed class CurrentChart : FrameworkElement
 				DrawLabel(
 					drawingContext,
 					voltage.ToString("0.0",CultureInfo.InvariantCulture),
-					VoltageBrush,
+					AxisTextBrush,
 					new Point(area.Right+4,y),
 					false);
 			}

@@ -36,6 +36,10 @@ Sprawdź kolejno:
 8. Sprawdź, że pole nastawy ma 30 px wysokości i jest wyśrodkowane obok niezależnego stosu dwóch pełnych przycisków strzałek.
 9. Otwórz z menu `O aplikacji` osobno okno autora i licencji oraz sprawdź wersję w tytułach okien.
 
+### Wynik kontroli interfejsu v0.1.6 - 2026-09-28
+
+Wersję Release uruchomiono z argumentem `--demo` na Windows 10 Home 22H2 przy skalowaniu 100% i aktywnym ciemnym motywie aplikacji. Potwierdzono ciemne natywne paski tytułu oraz menu, białe wartości liczbowe i opisy osi wykresu, czerwone oznaczenie jednostki `A`, zielone oznaczenie jednostki `V` oraz zachowanie kolorów przebiegów. W Single przy limicie 0,100 A potwierdzono widoczną rezystancję `120 Ω` po lewej stronie wyników pomiaru. Testy regresyjne potwierdzają niezerowy czas od początku sesji i wspólny eksport napięcia z prądem.
+
 ### Wynik kontroli interfejsu v0.1.5 - 2026-09-28
 
 Wersję Release uruchomiono z argumentem `--demo` przy skalowaniu 100%. Potwierdzono, że okna autora i licencji jawnie używają palety aplikacji: tło okna `#686868`, białe napisy oraz obszar tekstu licencji `#858585`. Marginesy obu okien nie zawierają już białego tła. Zrzuty kontrolne zapisano jako `artifacts/ui-v0.1.5-author-after.png` i `artifacts/ui-v0.1.5-license-after.png`.

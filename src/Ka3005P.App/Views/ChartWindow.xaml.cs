@@ -8,6 +8,7 @@ public partial class ChartWindow : Window
 	public ChartWindow()
 	{
 		InitializeComponent();
+		SystemTheme.ApplyTo(this);
 		Title="Wykres - "+AppInformation.DisplayName;
 	}
 

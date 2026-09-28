@@ -92,4 +92,66 @@ public sealed class CsvMeasurementWriterTests
 
 		Assert.Equal("0;0.000;0.100;\n1;0.100;0.200;\n",output.ToString());
 	}
+
+	[Fact]
+	public async Task WriteSingleBothAsync_ExportsVoltageAndCurrentInOneRow()
+	{
+		StringWriter output=new();
+		CsvMeasurementWriter writer=new(output);
+		await writer.WriteHeaderAsync(
+			MeasurementLayout.Single,
+			MeasurementExportKind.VoltageAndCurrent,
+			CancellationToken.None);
+
+		await writer.WriteAsync(
+			new MeasurementSample(TimeSpan.FromMilliseconds(1250),1234,567),
+			MeasurementExportKind.VoltageAndCurrent,
+			CancellationToken.None);
+
+		Assert.Equal(
+			"Sample;Time;Voltage;Current;\n[-];[s];[V];[A];\n"+
+			"0;1.250;12.34;0.567;\n",
+			output.ToString());
+	}
+
+	[Fact]
+	public async Task WriteDualBothAsync_ExportsModeSpecificVoltageAndCurrentColumns()
+	{
+		StringWriter output=new();
+		CsvMeasurementWriter writer=new(output);
+		await writer.WriteHeaderAsync(
+			MeasurementLayout.Series,
+			MeasurementExportKind.VoltageAndCurrent,
+			CancellationToken.None);
+		DualMeasurement measurement=DualMeasurement.Aggregate(
+			DualMode.Series,
+			new MeasurementSample(TimeSpan.FromSeconds(2),1200,400),
+			new MeasurementSample(TimeSpan.FromSeconds(2),1100,350));
+
+		await writer.WriteAsync(
+			measurement,
+			MeasurementExportKind.VoltageAndCurrent,
+			CancellationToken.None);
+
+		Assert.Equal(
+			"Sample;Time;Voltage 1;Voltage 2;Voltage total;Current 1;Current 2;\n"+
+			"[-];[s];[V];[V];[V];[A];[A];\n"+
+			"0;2.000;12.00;11.00;23.00;0.400;0.350;\n",
+			output.ToString());
+	}
+
+	[Fact]
+	public async Task WriteMissingBothAsync_LeavesVoltageAndCurrentColumnsEmpty()
+	{
+		StringWriter output=new();
+		CsvMeasurementWriter writer=new(output);
+
+		await writer.WriteMissingAsync(
+			TimeSpan.FromSeconds(3),
+			MeasurementLayout.Single,
+			MeasurementExportKind.VoltageAndCurrent,
+			CancellationToken.None);
+
+		Assert.Equal("0;3.000;;;\n",output.ToString());
+	}
 }

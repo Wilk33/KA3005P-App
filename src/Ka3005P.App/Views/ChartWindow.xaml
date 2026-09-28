@@ -21,6 +21,7 @@
 			<MenuItem Header="Zapisz jako">
 				<MenuItem Header="Napięcie CSV" Command="{Binding SaveVoltageCommand}" />
 				<MenuItem Header="Prąd CSV" Command="{Binding SaveCurrentCommand}" />
+				<MenuItem Header="Napięcie i prąd CSV" Command="{Binding SaveVoltageAndCurrentCommand}" />
 			</MenuItem>
 		</Menu>
 		<Grid Margin="14">
@@ -41,8 +42,12 @@
 					IsOff="{Binding IsOff}"
 					IsOn="{Binding IsOn}" />
 				<StackPanel Grid.Column="1" Margin="12,0" Orientation="Horizontal" VerticalAlignment="Center">
-					<TextBlock Margin="0,0,14,0" FontFamily="Consolas" FontSize="22" Foreground="#FFFF2020" Text="{Binding CurrentText}" />
-					<TextBlock FontFamily="Consolas" FontSize="22" Foreground="#FF00FF00" Text="{Binding VoltageText}" />
+					<TextBlock Margin="0,0,14,0" FontFamily="Consolas" FontSize="22" Foreground="{StaticResource KoradTextBrush}">
+						<Run Text="{Binding CurrentText,Mode=OneWay}" /><Run Foreground="#FFFF2020" Text=" A" />
+					</TextBlock>
+					<TextBlock FontFamily="Consolas" FontSize="22" Foreground="{StaticResource KoradTextBrush}">
+						<Run Text="{Binding VoltageText,Mode=OneWay}" /><Run Foreground="#FF00FF00" Text=" V" />
+					</TextBlock>
 				</StackPanel>
 				<TextBlock
 					Grid.Column="2"

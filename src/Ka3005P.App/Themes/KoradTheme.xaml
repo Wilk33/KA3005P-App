@@ -15,6 +15,8 @@
 	<SolidColorBrush x:Key="KoradOffBrush" Color="{StaticResource KoradOff}" />
 	<SolidColorBrush x:Key="KoradOnBrush" Color="{StaticResource KoradOn}" />
 	<SolidColorBrush x:Key="KoradOnActiveBrush" Color="{StaticResource KoradOnActive}" />
+	<SolidColorBrush x:Key="SystemChromeBackgroundBrush" Color="#F0F0F0" />
+	<SolidColorBrush x:Key="SystemChromeForegroundBrush" Color="#000000" />
 
 	<Style TargetType="Window">
 		<Setter Property="Background" Value="{StaticResource KoradBackgroundBrush}" />
@@ -181,12 +183,16 @@
 	</Style>
 
 	<Style TargetType="Menu">
+		<Setter Property="Background" Value="{DynamicResource SystemChromeBackgroundBrush}" />
+		<Setter Property="Foreground" Value="{DynamicResource SystemChromeForegroundBrush}" />
 		<Setter Property="FontFamily" Value="Segoe UI" />
 		<Setter Property="FontSize" Value="12" />
 		<Setter Property="FontWeight" Value="Normal" />
 	</Style>
 
 	<Style TargetType="MenuItem">
+		<Setter Property="Background" Value="{DynamicResource SystemChromeBackgroundBrush}" />
+		<Setter Property="Foreground" Value="{DynamicResource SystemChromeForegroundBrush}" />
 		<Setter Property="FontFamily" Value="Segoe UI" />
 		<Setter Property="FontSize" Value="12" />
 		<Setter Property="FontWeight" Value="Normal" />

@@ -16,6 +16,7 @@ public partial class MainWindow : Window
 	public MainWindow()
 	{
 		InitializeComponent();
+		SystemTheme.ApplyTo(this);
 	}
 
 	private async void SelectSingleClick(object sender,RoutedEventArgs eventArgs)
@@ -74,6 +75,13 @@ public partial class MainWindow : Window
 		await SaveAsync(MeasurementExportKind.Current);
 	}
 
+	private async void SaveVoltageAndCurrentClick(
+		object sender,
+		RoutedEventArgs eventArgs)
+	{
+		await SaveAsync(MeasurementExportKind.VoltageAndCurrent);
+	}
+
 	private void OpenAuthorClick(object sender,RoutedEventArgs eventArgs)
 	{
 		AuthorWindow window=new()
@@ -99,9 +107,13 @@ public partial class MainWindow : Window
 			return;
 		}
 		FileDialogService dialog=new();
-		string name=kind == MeasurementExportKind.Voltage
-			? "napiecie.csv"
-			: "prad.csv";
+		string name=kind switch
+		{
+			MeasurementExportKind.Voltage=>"napiecie.csv",
+			MeasurementExportKind.Current=>"prad.csv",
+			MeasurementExportKind.VoltageAndCurrent=>"napiecie-i-prad.csv",
+			_=>throw new ArgumentOutOfRangeException(nameof(kind))
+		};
 		string? path=await dialog.ChooseSavePathAsync(
 			name,
 			CancellationToken.None);

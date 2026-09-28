@@ -30,6 +30,25 @@ public sealed class ExportCommandTests : IDisposable
 		Assert.Contains("0.150;12.34;",content);
 	}
 
+	[Fact]
+	public async Task SaveVoltageAndCurrentCommand_WritesBothMeasurementsAsCsv()
+	{
+		Directory.CreateDirectory(directory);
+		string path=Path.Combine(directory,"voltage-current.csv");
+		FakePowerSupplySession session=new();
+		SingleSupplyViewModel main=new(session);
+		using ChartViewModel chart=main.CreateChartViewModel(
+			new FakeFileDialogService(path));
+		session.PublishMeasurement(
+			new MeasurementSample(TimeSpan.FromMilliseconds(1250),1234,567));
+
+		await chart.SaveVoltageAndCurrentCommand.ExecuteAsync(null);
+
+		string content=await File.ReadAllTextAsync(path);
+		Assert.Contains("Time;Voltage;Current;",content);
+		Assert.Contains("1.250;12.34;0.567;",content);
+	}
+
 	public void Dispose()
 	{
 		if(Directory.Exists(directory))

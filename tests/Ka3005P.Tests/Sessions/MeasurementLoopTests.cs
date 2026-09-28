@@ -1,4 +1,5 @@
 using Ka3005P.Core.Device;
+using Ka3005P.Core.Measurements;
 using Ka3005P.Core.Protocol;
 using Ka3005P.Core.Sessions;
 using Ka3005P.Tests.Fakes;
@@ -64,22 +65,24 @@ public sealed class MeasurementLoopTests
 	}
 
 	[Fact]
-	public async Task MeasurementReceived_UsesMonotonicTimestamp()
+	public async Task MeasurementReceived_UsesMonotonicTimestampAndSessionElapsedTime()
 	{
 		ManualTimeProvider time=new();
 		FakePowerSupplyDevice device=new();
 		await using PowerSupplySession session=
 			new(device,time,TimeSpan.FromMilliseconds(100));
-		TaskCompletionSource<long> received=
+		TaskCompletionSource<MeasurementSample> received=
 			new(TaskCreationOptions.RunContinuationsAsynchronously);
-		session.MeasurementReceived+=(_,sample)=>received.TrySetResult(sample.Timestamp);
+		session.MeasurementReceived+=(_,sample)=>received.TrySetResult(sample);
 		await session.StartAsync(CancellationToken.None);
 		await session.SetOutputAsync(true,CancellationToken.None);
 
 		time.Advance(TimeSpan.FromMilliseconds(250));
-		long timestamp=await received.Task.WaitAsync(TimeSpan.FromSeconds(2));
+		MeasurementSample sample=
+			await received.Task.WaitAsync(TimeSpan.FromSeconds(2));
 
-		Assert.Equal(TimeSpan.FromMilliseconds(250).Ticks,timestamp);
+		Assert.Equal(TimeSpan.FromMilliseconds(250).Ticks,sample.Timestamp);
+		Assert.Equal(TimeSpan.FromMilliseconds(250),sample.Elapsed);
 		Assert.Equal(TimeSpan.Zero,session.Snapshot.MeasurementAge);
 	}
 

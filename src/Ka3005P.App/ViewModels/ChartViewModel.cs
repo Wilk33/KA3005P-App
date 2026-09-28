@@ -31,8 +31,8 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 	private double maximumY=1;
 	private double minimumVoltageY;
 	private double maximumVoltageY=1;
-	private string voltageText="0,00 V";
-	private string currentText="0,000 A";
+	private string voltageText="0,00";
+	private string currentText="0,000";
 	private string? resistanceText;
 	private string? errorMessage;
 	private bool disposed;
@@ -73,12 +73,17 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 			_=>SaveAsync(MeasurementExportKind.Current),
 			_=>exporter is not null && fileDialog is not null,
 			exception=>ErrorMessage=exception.Message);
+		SaveVoltageAndCurrentCommand=new AsyncRelayCommand(
+			_=>SaveAsync(MeasurementExportKind.VoltageAndCurrent),
+			_=>exporter is not null && fileDialog is not null,
+			exception=>ErrorMessage=exception.Message);
 	}
 
 	public ObservableCollection<ChartPoint> Points { get; }=[];
 	public AsyncRelayCommand ToggleOutputCommand { get; }
 	public AsyncRelayCommand SaveVoltageCommand { get; }
 	public AsyncRelayCommand SaveCurrentCommand { get; }
+	public AsyncRelayCommand SaveVoltageAndCurrentCommand { get; }
 
 	public bool IsOutputOn
 	{
@@ -223,9 +228,13 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 		{
 			return;
 		}
-		string name=kind == MeasurementExportKind.Voltage
-			? "napiecie.csv"
-			: "prad.csv";
+		string name=kind switch
+		{
+			MeasurementExportKind.Voltage=>"napiecie.csv",
+			MeasurementExportKind.Current=>"prad.csv",
+			MeasurementExportKind.VoltageAndCurrent=>"napiecie-i-prad.csv",
+			_=>throw new ArgumentOutOfRangeException(nameof(kind))
+		};
 		string? path=await fileDialog.ChooseSavePathAsync(
 			name,
 			CancellationToken.None);
@@ -285,9 +294,9 @@ public sealed class ChartViewModel : ObservableObject,IDisposable
 			sample.VoltageHundredths/100d,
 			sample.CurrentThousandths/1000d));
 		VoltageText=(sample.VoltageHundredths/100m)
-			.ToString("0.00",PolishCulture)+" V";
+			.ToString("0.00",PolishCulture);
 		CurrentText=(sample.CurrentThousandths/1000m)
-			.ToString("0.000",PolishCulture)+" A";
+			.ToString("0.000",PolishCulture);
 		if(sample.IsCurrentLimited && ResistanceFormatter.TryFormat(
 			sample.VoltageHundredths,
 			sample.CurrentThousandths,

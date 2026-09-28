@@ -16,6 +16,7 @@ public partial class App
 	protected override async void OnStartup(StartupEventArgs e)
 	{
 		base.OnStartup(e);
+		SystemTheme.Initialize(Resources);
 		bool demoMode=e.Args.Any(argument=>
 			string.Equals(argument,"--demo",StringComparison.OrdinalIgnoreCase));
 		if(demoMode)

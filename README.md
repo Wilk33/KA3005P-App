@@ -26,7 +26,7 @@ Ka3005P.App.exe --demo
 
 W demo można przełączać tryb pojedynczy i Dual, połączyć fikcyjne porty, zmieniać nastawy, używać ON/OFF, obserwować pomiary, wykres i eksport CSV. Pomiar przy OFF wynosi 0 V i 0 A, nawet jeśli nastawa pozostaje zapisana.
 
-Tytuł każdego okna zawiera wersję aplikacji. Menu `O aplikacji` otwiera osobne okno danych autora albo pełnego tekstu licencji PolyForm Noncommercial License 1.0.0. Ikona programu pochodzi z referencyjnej grafiki `KoradS150.png`.
+Tytuł każdego okna zawiera wersję aplikacji. Natywne paski tytułu i menu przyjmują jasny albo ciemny motyw aplikacji ustawiony w Windows. Menu `O aplikacji` otwiera osobne okno danych autora albo pełnego tekstu licencji PolyForm Noncommercial License 1.0.0. Ikona programu pochodzi z referencyjnej grafiki `KoradS150.png`.
 
 ## Budowanie i testy
 
@@ -68,7 +68,7 @@ Wybór trybu w aplikacji nie przełącza przewodów. Przed włączeniem wyjścia
 
 ## Eksport
 
-Menu `Zapisz jako` zapisuje napięcie albo prąd do pliku CSV z numerem próbki i czasem od początku sesji. Układ kolumn odpowiada wybranemu trybowi. Pliki używają kropki dziesiętnej, średnika jako separatora i jednostek w drugim wierszu.
+Menu `Zapisz jako` zapisuje napięcie, prąd albo oba pomiary do jednego pliku CSV z numerem próbki i czasem od początku sesji. Układ kolumn odpowiada wybranemu trybowi. Pliki używają kropki dziesiętnej, średnika jako separatora i jednostek w drugim wierszu.
 
 ## Zakres referencyjny
 

@@ -103,8 +103,8 @@ public sealed class ChartViewModelTests
 		ChartPoint point=Assert.Single(chart.Points);
 		Assert.Equal(0.1,point.VoltageVolts);
 		Assert.Equal(1,point.CurrentAmperes);
-		Assert.Equal("0,10 V",chart.VoltageText);
-		Assert.Equal("1,000 A",chart.CurrentText);
+		Assert.Equal("0,10",chart.VoltageText);
+		Assert.Equal("1,000",chart.CurrentText);
 		Assert.Equal("100 mΩ",chart.ResistanceText);
 		Assert.True(chart.IsResistanceVisible);
 		Assert.True(chart.ShowCurrent);
