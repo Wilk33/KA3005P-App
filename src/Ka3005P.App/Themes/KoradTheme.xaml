@@ -17,6 +17,9 @@
 	<SolidColorBrush x:Key="KoradOnActiveBrush" Color="{StaticResource KoradOnActive}" />
 	<SolidColorBrush x:Key="SystemChromeBackgroundBrush" Color="#F0F0F0" />
 	<SolidColorBrush x:Key="SystemChromeForegroundBrush" Color="#000000" />
+	<SolidColorBrush x:Key="SystemChromeHoverBrush" Color="#DADADA" />
+	<SolidColorBrush x:Key="SystemChromeDisabledBrush" Color="#707070" />
+	<SolidColorBrush x:Key="SystemChromeBorderBrush" Color="#808080" />
 
 	<Style TargetType="Window">
 		<Setter Property="Background" Value="{StaticResource KoradBackgroundBrush}" />
@@ -182,6 +185,135 @@
 		</Style.Triggers>
 	</Style>
 
+	<ControlTemplate x:Key="TopLevelMenuItemTemplate" TargetType="MenuItem">
+		<Grid>
+			<Border
+				x:Name="HeaderBorder"
+				Background="{TemplateBinding Background}"
+				Padding="{TemplateBinding Padding}"
+				SnapsToDevicePixels="True">
+				<ContentPresenter
+					VerticalAlignment="Center"
+					ContentSource="Header"
+					RecognizesAccessKey="True" />
+			</Border>
+			<Popup
+				x:Name="PART_Popup"
+				AllowsTransparency="True"
+				Focusable="False"
+				IsOpen="{Binding IsSubmenuOpen,RelativeSource={RelativeSource TemplatedParent}}"
+				Placement="Bottom"
+				PopupAnimation="None">
+				<Border
+					x:Name="SubmenuBorder"
+					Background="{DynamicResource SystemChromeBackgroundBrush}"
+					BorderBrush="{DynamicResource SystemChromeBorderBrush}"
+					BorderThickness="1"
+					Padding="1">
+					<ScrollViewer
+						CanContentScroll="True"
+						HorizontalScrollBarVisibility="Disabled"
+						VerticalScrollBarVisibility="Auto">
+						<ItemsPresenter
+							Grid.IsSharedSizeScope="True"
+							KeyboardNavigation.DirectionalNavigation="Cycle"
+							SnapsToDevicePixels="True" />
+					</ScrollViewer>
+				</Border>
+			</Popup>
+		</Grid>
+		<ControlTemplate.Triggers>
+			<Trigger Property="IsHighlighted" Value="True">
+				<Setter TargetName="HeaderBorder" Property="Background" Value="{DynamicResource SystemChromeHoverBrush}" />
+			</Trigger>
+			<Trigger Property="IsSubmenuOpen" Value="True">
+				<Setter TargetName="HeaderBorder" Property="Background" Value="{DynamicResource SystemChromeHoverBrush}" />
+			</Trigger>
+			<Trigger Property="IsEnabled" Value="False">
+				<Setter Property="Foreground" Value="{DynamicResource SystemChromeDisabledBrush}" />
+			</Trigger>
+		</ControlTemplate.Triggers>
+	</ControlTemplate>
+
+	<ControlTemplate x:Key="SubmenuMenuItemTemplate" TargetType="MenuItem">
+		<Grid
+			x:Name="ItemRoot"
+			MinWidth="138"
+			Background="{TemplateBinding Background}"
+			SnapsToDevicePixels="True">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="22" />
+				<ColumnDefinition Width="*" />
+				<ColumnDefinition Width="18" />
+			</Grid.ColumnDefinitions>
+			<TextBlock
+				x:Name="CheckMark"
+				HorizontalAlignment="Center"
+				VerticalAlignment="Center"
+				FontFamily="Segoe UI Symbol"
+				FontSize="13"
+				Foreground="{DynamicResource SystemChromeForegroundBrush}"
+				Text="✓"
+				Visibility="Collapsed" />
+			<ContentPresenter
+				Grid.Column="1"
+				Margin="4,3,12,3"
+				VerticalAlignment="Center"
+				ContentSource="Header"
+				RecognizesAccessKey="True" />
+			<TextBlock
+				x:Name="SubmenuArrow"
+				Grid.Column="2"
+				HorizontalAlignment="Center"
+				VerticalAlignment="Center"
+				FontSize="10"
+				Text="▶"
+				Visibility="Collapsed" />
+			<Popup
+				x:Name="PART_Popup"
+				AllowsTransparency="True"
+				Focusable="False"
+				HorizontalOffset="-2"
+				IsOpen="{Binding IsSubmenuOpen,RelativeSource={RelativeSource TemplatedParent}}"
+				Placement="Right"
+				PopupAnimation="None">
+				<Border
+					Background="{DynamicResource SystemChromeBackgroundBrush}"
+					BorderBrush="{DynamicResource SystemChromeBorderBrush}"
+					BorderThickness="1"
+					Padding="1">
+					<ScrollViewer
+						CanContentScroll="True"
+						HorizontalScrollBarVisibility="Disabled"
+						VerticalScrollBarVisibility="Auto">
+						<ItemsPresenter
+							Grid.IsSharedSizeScope="True"
+							KeyboardNavigation.DirectionalNavigation="Cycle"
+							SnapsToDevicePixels="True" />
+					</ScrollViewer>
+				</Border>
+			</Popup>
+		</Grid>
+		<ControlTemplate.Triggers>
+			<Trigger Property="IsChecked" Value="True">
+				<Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+			</Trigger>
+			<Trigger Property="Role" Value="SubmenuHeader">
+				<Setter TargetName="SubmenuArrow" Property="Visibility" Value="Visible" />
+			</Trigger>
+			<Trigger Property="IsHighlighted" Value="True">
+				<Setter TargetName="ItemRoot" Property="Background" Value="{DynamicResource SystemChromeHoverBrush}" />
+			</Trigger>
+			<Trigger Property="IsSubmenuOpen" Value="True">
+				<Setter TargetName="ItemRoot" Property="Background" Value="{DynamicResource SystemChromeHoverBrush}" />
+			</Trigger>
+			<Trigger Property="IsEnabled" Value="False">
+				<Setter Property="Foreground" Value="{DynamicResource SystemChromeDisabledBrush}" />
+				<Setter TargetName="CheckMark" Property="Foreground" Value="{DynamicResource SystemChromeDisabledBrush}" />
+			</Trigger>
+		</ControlTemplate.Triggers>
+	</ControlTemplate>
+
 	<Style TargetType="Menu">
 		<Setter Property="Background" Value="{DynamicResource SystemChromeBackgroundBrush}" />
 		<Setter Property="Foreground" Value="{DynamicResource SystemChromeForegroundBrush}" />
@@ -191,11 +323,35 @@
 	</Style>
 
 	<Style TargetType="MenuItem">
-		<Setter Property="Background" Value="{DynamicResource SystemChromeBackgroundBrush}" />
+		<Setter Property="Background" Value="Transparent" />
 		<Setter Property="Foreground" Value="{DynamicResource SystemChromeForegroundBrush}" />
 		<Setter Property="FontFamily" Value="Segoe UI" />
 		<Setter Property="FontSize" Value="12" />
 		<Setter Property="FontWeight" Value="Normal" />
+		<Setter Property="Padding" Value="7,3" />
+		<Setter Property="Template" Value="{StaticResource SubmenuMenuItemTemplate}" />
+		<Style.Triggers>
+			<Trigger Property="Role" Value="TopLevelHeader">
+				<Setter Property="Template" Value="{StaticResource TopLevelMenuItemTemplate}" />
+			</Trigger>
+			<Trigger Property="Role" Value="TopLevelItem">
+				<Setter Property="Template" Value="{StaticResource TopLevelMenuItemTemplate}" />
+			</Trigger>
+		</Style.Triggers>
+	</Style>
+
+	<Style TargetType="Separator">
+		<Setter Property="Margin" Value="4,3" />
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="Separator">
+					<Border
+						Height="1"
+						Background="{DynamicResource SystemChromeBorderBrush}"
+						SnapsToDevicePixels="True" />
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
 	</Style>
 
 	<Style x:Key="ValueTextStyle" TargetType="TextBlock">

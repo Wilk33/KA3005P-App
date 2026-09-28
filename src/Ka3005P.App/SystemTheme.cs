@@ -25,6 +25,18 @@ internal static class SystemTheme
 			useDarkMode
 				? Colors.White
 				: Colors.Black);
+		resources["SystemChromeHoverBrush"]=new SolidColorBrush(
+			useDarkMode
+				? Color.FromRgb(62,62,62)
+				: Color.FromRgb(218,218,218));
+		resources["SystemChromeDisabledBrush"]=new SolidColorBrush(
+			useDarkMode
+				? Color.FromRgb(122,122,122)
+				: Color.FromRgb(112,112,112));
+		resources["SystemChromeBorderBrush"]=new SolidColorBrush(
+			useDarkMode
+				? Color.FromRgb(112,112,112)
+				: Color.FromRgb(128,128,128));
 		resources[SystemColors.MenuBrushKey]=
 			resources["SystemChromeBackgroundBrush"];
 		resources[SystemColors.MenuTextBrushKey]=

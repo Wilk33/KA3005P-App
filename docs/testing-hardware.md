@@ -38,7 +38,7 @@ Sprawdź kolejno:
 
 ### Wynik kontroli interfejsu v0.1.6 - 2026-09-28
 
-Wersję Release uruchomiono z argumentem `--demo` na Windows 10 Home 22H2 przy skalowaniu 100% i aktywnym ciemnym motywie aplikacji. Potwierdzono ciemne natywne paski tytułu oraz menu, białe wartości liczbowe i opisy osi wykresu, czerwone oznaczenie jednostki `A`, zielone oznaczenie jednostki `V` oraz zachowanie kolorów przebiegów. W Single przy limicie 0,100 A potwierdzono widoczną rezystancję `120 Ω` po lewej stronie wyników pomiaru. Testy regresyjne potwierdzają niezerowy czas od początku sesji i wspólny eksport napięcia z prądem.
+Wersję Release uruchomiono z argumentem `--demo` na Windows 10 Home 22H2 przy skalowaniu 100% i aktywnym ciemnym motywie aplikacji. Potwierdzono ciemne natywne paski tytułu, paski menu i rozwijane listy menu, w tym ciemne podświetlenie, szary tekst pozycji niedostępnej oraz biały znacznik wyboru. Potwierdzono również białe wartości liczbowe i opisy osi wykresu, czerwone oznaczenie jednostki `A`, zielone oznaczenie jednostki `V` oraz zachowanie kolorów przebiegów. W Single przy limicie 0,100 A potwierdzono widoczną rezystancję `120 Ω` po lewej stronie wyników pomiaru. Testy regresyjne potwierdzają niezerowy czas od początku sesji i wspólny eksport napięcia z prądem.
 
 ### Wynik kontroli interfejsu v0.1.5 - 2026-09-28
 
