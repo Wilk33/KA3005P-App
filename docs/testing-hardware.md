@@ -36,6 +36,10 @@ Sprawdź kolejno:
 8. Sprawdź, że pole nastawy ma 30 px wysokości i jest wyśrodkowane obok niezależnego stosu dwóch pełnych przycisków strzałek.
 9. Otwórz z menu `O aplikacji` osobno okno autora i licencji oraz sprawdź wersję w tytułach okien.
 
+### Wynik kontroli interfejsu v0.1.5 - 2026-09-28
+
+Wersję Release uruchomiono z argumentem `--demo` przy skalowaniu 100%. Potwierdzono, że okna autora i licencji jawnie używają palety aplikacji: tło okna `#686868`, białe napisy oraz obszar tekstu licencji `#858585`. Marginesy obu okien nie zawierają już białego tła. Zrzuty kontrolne zapisano jako `artifacts/ui-v0.1.5-author-after.png` i `artifacts/ui-v0.1.5-license-after.png`.
+
 ### Wynik kontroli interfejsu v0.1.4 - 2026-09-27
 
 Wersję Release uruchomiono z argumentem `--demo` przy skalowaniu 100%. Potwierdzono tytuł `Korad v0.1.4 - DEMO`, ikonę utworzoną z `KoradS150.png`, pola nastaw o wysokości 30 px wyśrodkowane względem niezależnych stosów przycisków o wysokości 42 px oraz nieucięte symbole strzałek. W oknie wykresu potwierdzono czerwony tekst i linię prądu oraz zielony tekst i linię napięcia. Testy automatyczne potwierdzają treść autora, wersję tytułu i dostępność pełnej licencji osadzonej w aplikacji.
