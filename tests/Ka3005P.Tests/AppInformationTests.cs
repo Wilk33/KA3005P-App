@@ -7,8 +7,8 @@ public sealed class AppInformationTests
 	[Fact]
 	public void WindowTitle_ContainsApplicationVersionAndDemoMarker()
 	{
-		Assert.Equal("Korad v0.1.6",AppInformation.GetWindowTitle(false));
-		Assert.Equal("Korad v0.1.6 - DEMO",AppInformation.GetWindowTitle(true));
+		Assert.Equal("Korad v0.1.7",AppInformation.GetWindowTitle(false));
+		Assert.Equal("Korad v0.1.7 - DEMO",AppInformation.GetWindowTitle(true));
 	}
 
 	[Fact]

@@ -36,6 +36,11 @@ Sprawdź kolejno:
 8. Sprawdź, że pole nastawy ma 30 px wysokości i jest wyśrodkowane obok niezależnego stosu dwóch pełnych przycisków strzałek.
 9. Otwórz z menu `O aplikacji` osobno okno autora i licencji oraz sprawdź wersję w tytułach okien.
 
+### Wynik kontroli interfejsu v0.1.7 - 2026-09-28
+
+- W widoku Single blok kontrolek i pomiarów przesunięto o 4 px w górę, aby dolna krawędź cyfr prądu nie była przycinana przy zachowaniu dotychczasowej wysokości okna oraz rozmiaru tekstu.
+- Widok demonstracyjny sprawdzono dla pomiaru `12,00 V / 0,100 A`; kompletne cyfry i dolne fragmenty glifów pozostają widoczne.
+
 ### Wynik kontroli interfejsu v0.1.6 - 2026-09-28
 
 Wersję Release uruchomiono z argumentem `--demo` na Windows 10 Home 22H2 przy skalowaniu 100% i aktywnym ciemnym motywie aplikacji. Potwierdzono ciemne natywne paski tytułu, paski menu i rozwijane listy menu, w tym ciemne podświetlenie, szary tekst pozycji niedostępnej oraz biały znacznik wyboru. Potwierdzono również białe wartości liczbowe i opisy osi wykresu, czerwone oznaczenie jednostki `A`, zielone oznaczenie jednostki `V` oraz zachowanie kolorów przebiegów. W Single przy limicie 0,100 A potwierdzono widoczną rezystancję `120 Ω` po lewej stronie wyników pomiaru. Testy regresyjne potwierdzają niezerowy czas od początku sesji i wspólny eksport napięcia z prądem.
