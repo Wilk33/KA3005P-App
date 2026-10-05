@@ -1,8 +1,13 @@
 # KA3005P App
 
+> [!IMPORTANT]
+> **To repozytorium zawiera historyczną linię rozwoju zakończoną na wersji 0.1.7.**
+>
+> Aktywny rozwój aplikacji Korad KA3005P jest kontynuowany w repozytorium [Wilk33/LabStation](https://github.com/Wilk33/LabStation), w katalogu [KA3005P](https://github.com/Wilk33/LabStation/tree/main/KA3005P). Bieżąca wersja w LabStation to 0.2.9. Nowe poprawki, wydania i wspólny panel dla wszystkich przyrządów są publikowane wyłącznie tam.
+
 Natywna aplikacja Windows do obsługi zasilaczy Korad KA3005P, zachowująca funkcjonalność i styl projektu referencyjnego C++ Builder. Nowa architektura rozdziela interfejs od transmisji szeregowej, dzięki czemu zmiana nastaw podczas aktywnego wyjścia nie czeka na zakończenie pomiaru.
 
-## Stan projektu
+## Zakres historycznej wersji 0.1.7
 
 Pierwsza wersja obejmuje pojedynczy zasilacz oraz Dual Korad w trybie szeregowym, równoległym i symetrycznym. Tryb wybiera się w jednym, kompaktowym oknie głównym. Aplikacja ma czerwony wykres prądu z opcjonalną zieloną linią napięcia, eksport CSV, obliczanie rezystancji zwarciowej, blokadę współdzielenia portów i tryb demonstracyjny bez sprzętu.
 
@@ -90,3 +95,7 @@ Projekt jest udostępniany na warunkach **PolyForm Noncommercial License 1.0.0**
 Źródło tekstu: [PolyForm Project](https://polyformproject.org/licenses/noncommercial/1.0.0).
 
 Licencje zależności znajdują się w [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Procedura testu na rzeczywistym sprzęcie jest opisana w [docs/testing-hardware.md](docs/testing-hardware.md).
+
+## Autorstwo i rozwój
+
+Projekt był tworzony przez Codex GPT-5.6-Sol pod kierunkiem Mateusza Skipora, na podstawie jego wymagań, decyzji projektowych i testów urządzeń.
